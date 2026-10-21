@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { getUsersMeQueryKey, useUsersMe, usersDeleteAccount, usersUpdate } from '@/core/api/generated/users/users';
 import { useAppConfig } from '@/core/app-config/use-app-config';
@@ -52,6 +52,8 @@ export function AccountScreen() {
       </Card>
       <Button title="Saved addresses" kind="ghost" onPress={() => router.push('/addresses')} />
       <Button title="Help & support" kind="ghost" onPress={() => router.push('/support/new')} />
+      <Button title="Privacy Policy" kind="ghost" onPress={() => Linking.openURL('https://bocardo.app/privacy')} />
+      <Button title="Terms of Service" kind="ghost" onPress={() => Linking.openURL('https://bocardo.app/terms')} />
       {config.data?.supportPhone ? <Text variant="caption" muted center>Support: {config.data.supportPhone}</Text> : null}
       <Button title="Sign out" kind="secondary" onPress={() => { qc.clear(); void signOut(); }} />
       <Button title="Delete account" kind="ghost" onPress={deleteAccount} />

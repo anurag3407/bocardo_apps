@@ -26,6 +26,7 @@ export function CheckoutScreen() {
   const delivery = useDeliveryLocation((s) => s.location);
   const [chosenAddressId, setAddressId] = useState<string | null>(delivery?.addressId ?? null);
   const [couponInput, setCouponInput] = useState(cart.couponCode ?? '');
+  const [customerNote, setCustomerNote] = useState('');
   const [chosenMethod, setMethod] = useState<'online' | 'cod'>('online');
   const [placing, setPlacing] = useState(false);
   // when browsing by GPS, fall back to the saved default (serviceable) address
@@ -48,7 +49,10 @@ export function CheckoutScreen() {
     if (idempotency.current?.quoteId !== q.quoteId) idempotency.current = { quoteId: q.quoteId, key: Crypto.randomUUID() };
     setPlacing(true);
     try {
-      const result = await ordersPlace({ quoteId: q.quoteId, paymentMethod: method }, { headers: { 'Idempotency-Key': idempotency.current.key } });
+      const result = await ordersPlace(
+        { quoteId: q.quoteId, paymentMethod: method, customerNote: customerNote.trim() || undefined },
+        { headers: { 'Idempotency-Key': idempotency.current.key } },
+      );
       cart.clear();
       void queryClient.invalidateQueries({ queryKey: ['/orders'] });
 
@@ -146,6 +150,14 @@ export function CheckoutScreen() {
           </Pressable>
         ))}
       </Row>
+
+      <Text variant="label">Cooking & delivery instructions</Text>
+      <Input
+        value={customerNote}
+        onChangeText={setCustomerNote}
+        placeholder="e.g. Less spicy, leave at door, gate code 4B"
+        maxLength={300}
+      />
 
       {quote.data ? <BillCard pricing={quote.data.pricing} eta={quote.data.etaMinutes} /> : null}
 
