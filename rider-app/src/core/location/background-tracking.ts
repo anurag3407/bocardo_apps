@@ -67,30 +67,55 @@ export class BackgroundPermissionError extends Error {
   }
 }
 
-export async function startTracking() {
+/**
+ * Adaptive GPS. A fix every 5 s drains a budget phone in ~3.5 h; riders need a full shift.
+ *  - idle   (online, waiting for an offer): every 30 s / 50 m, balanced accuracy — enough for
+ *           dispatch, which only needs to know who is roughly near a restaurant.
+ *  - active (on a trip): every 10 s / 20 m, high accuracy — smooth live tracking for customers.
+ */
+export type TrackingMode = 'idle' | 'active';
+
+const PROFILES: Record<TrackingMode, Pick<Location.LocationTaskOptions, 'accuracy' | 'timeInterval' | 'distanceInterval' | 'deferredUpdatesInterval'>> = {
+  idle: { accuracy: Location.Accuracy.Balanced, timeInterval: 30_000, distanceInterval: 50, deferredUpdatesInterval: 30_000 },
+  active: { accuracy: Location.Accuracy.High, timeInterval: 10_000, distanceInterval: 20, deferredUpdatesInterval: 10_000 },
+};
+const MODE_KEY = 'rider-tracking-mode';
+
+export async function startTracking(mode: TrackingMode = 'idle') {
   const fg = await Location.requestForegroundPermissionsAsync();
   if (fg.status !== 'granted') throw new BackgroundPermissionError();
   const bg = await Location.requestBackgroundPermissionsAsync();
   if (bg.status !== 'granted') throw new BackgroundPermissionError();
-  if (await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK)) return;
+
+  const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
+  if (running && (await kv.getItem(MODE_KEY)) === mode) return;
+  if (running) await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+
   await Location.startLocationUpdatesAsync(LOCATION_TASK, {
-    accuracy: Location.Accuracy.High,
-    timeInterval: 5_000,
-    distanceInterval: 15,
-    deferredUpdatesInterval: 5_000,
+    ...PROFILES[mode],
     pausesUpdatesAutomatically: false,
     activityType: Location.ActivityType.OtherNavigation,
     showsBackgroundLocationIndicator: true,
     foregroundService: {
-      notificationTitle: 'You are on duty',
-      notificationBody: 'Bocardo is sharing your location for deliveries',
+      notificationTitle: mode === 'active' ? 'Delivery in progress' : 'You are on duty',
+      notificationBody: mode === 'active' ? 'Sharing live location with the customer' : 'Waiting for delivery requests',
       notificationColor: '#FF5A1F',
+      killServiceOnDestroy: false,
     },
   });
+  await kv.setItem(MODE_KEY, mode);
+}
+
+/** Switches GPS profile only if tracking is already running (never starts it implicitly). */
+export async function setTrackingMode(mode: TrackingMode) {
+  if (!(await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK))) return;
+  if ((await kv.getItem(MODE_KEY)) === mode) return;
+  await startTracking(mode);
 }
 
 export async function stopTracking() {
   if (await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK)) await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+  await kv.removeItem(MODE_KEY);
 }
 
 export async function currentPosition() {

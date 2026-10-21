@@ -1,9 +1,9 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { Client } from '@upstash/qstash';
-import { cert, initializeApp } from 'firebase-admin/app';
-import { readFileSync } from 'node:fs';
+import type { App } from 'firebase-admin/app';
 import { ENV, type Env } from '../config/env';
 import { DatabaseModule } from './database/database.module';
+import { createFirebaseApp, FIREBASE_APP } from './firebase/firebase-app';
 import { GEO_PROVIDER } from './geo/geo-provider';
 import { HaversineGeoProvider } from './geo/haversine-geo-provider';
 import { MapboxGeoProvider } from './geo/mapbox-geo-provider';
@@ -19,6 +19,15 @@ import { FcmPushSender } from './push/fcm-push-sender';
 import { LogPushSender } from './push/log-push-sender';
 import { PUSH_SENDER } from './push/push-sender';
 import { RealtimePublisher } from './realtime/realtime-publisher';
+import { HumanVerifier } from './security/human-verifier';
+import { LogSmsSender } from './sms/log-sms-sender';
+import { Msg91SmsSender } from './sms/msg91-sms-sender';
+import { SMS_SENDER } from './sms/sms-sender';
+import { StorageService } from './storage/storage.service';
+import { DirectTelephonyProvider } from './telephony/direct-telephony-provider';
+import { ExotelTelephonyProvider } from './telephony/exotel-telephony-provider';
+import { TELEPHONY_PROVIDER } from './telephony/telephony-provider';
+import { TwilioTelephonyProvider } from './telephony/twilio-telephony-provider';
 
 const logger = new Logger('InfraModule');
 
@@ -33,6 +42,8 @@ const logger = new Logger('InfraModule');
   providers: [
     JobRegistry,
     RealtimePublisher,
+    HumanVerifier,
+    StorageService,
     {
       provide: JOB_SCHEDULER,
       inject: [ENV, JobRegistry],
@@ -46,20 +57,61 @@ const logger = new Logger('InfraModule');
         return new LocalJobScheduler(registry);
       },
     },
+    { provide: FIREBASE_APP, inject: [ENV], useFactory: createFirebaseApp },
     {
       provide: PUSH_SENDER,
+      inject: [FIREBASE_APP],
+      useFactory: (app: App | null) => (app ? new FcmPushSender(app) : new LogPushSender()),
+    },
+    {
+      provide: TELEPHONY_PROVIDER,
       inject: [ENV],
       useFactory: (env: Env) => {
-        const raw = env.FIREBASE_SERVICE_ACCOUNT_BASE64
-          ? Buffer.from(env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8')
-          : env.FIREBASE_SERVICE_ACCOUNT_PATH
-            ? readFileSync(env.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf8')
-            : undefined;
-        if (!raw) {
-          logger.warn('Firebase service account not set — push notifications are logged only');
-          return new LogPushSender();
+        if (env.TELEPHONY_PROVIDER === 'exotel') {
+          if (
+            !env.EXOTEL_SID ||
+            !env.EXOTEL_API_KEY ||
+            !env.EXOTEL_API_TOKEN ||
+            !env.EXOTEL_CALLER_ID
+          )
+            throw new Error('EXOTEL_* settings are required');
+          return new ExotelTelephonyProvider({
+            sid: env.EXOTEL_SID,
+            apiKey: env.EXOTEL_API_KEY,
+            apiToken: env.EXOTEL_API_TOKEN,
+            subdomain: env.EXOTEL_SUBDOMAIN,
+            callerId: env.EXOTEL_CALLER_ID,
+          });
         }
-        return new FcmPushSender(initializeApp({ credential: cert(JSON.parse(raw)) }, 'bocardo'));
+        if (env.TELEPHONY_PROVIDER === 'twilio') {
+          if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_CALLER_ID)
+            throw new Error('TWILIO_* settings are required');
+          return new TwilioTelephonyProvider({
+            accountSid: env.TWILIO_ACCOUNT_SID,
+            authToken: env.TWILIO_AUTH_TOKEN,
+            callerId: env.TWILIO_CALLER_ID,
+          });
+        }
+        logger.warn('TELEPHONY_PROVIDER=direct — calls expose real numbers (development only)');
+        return new DirectTelephonyProvider();
+      },
+    },
+    {
+      provide: SMS_SENDER,
+      inject: [ENV],
+      useFactory: (env: Env) => {
+        if (env.SMS_PROVIDER === 'msg91') {
+          if (!env.MSG91_AUTH_KEY || !env.MSG91_OTP_TEMPLATE_ID)
+            throw new Error('MSG91_AUTH_KEY and MSG91_OTP_TEMPLATE_ID are required');
+          return new Msg91SmsSender({
+            authKey: env.MSG91_AUTH_KEY,
+            templateId: env.MSG91_OTP_TEMPLATE_ID,
+            senderId: env.SMS_SENDER_ID,
+            dltEntityId: env.DLT_PRINCIPAL_ENTITY_ID,
+            dltTemplateId: env.DLT_OTP_TEMPLATE_ID,
+          });
+        }
+        return new LogSmsSender();
       },
     },
     {
@@ -97,7 +149,12 @@ const logger = new Logger('InfraModule');
     PUSH_SENDER,
     GEO_PROVIDER,
     PAYMENT_PROVIDER,
+    TELEPHONY_PROVIDER,
+    SMS_SENDER,
+    FIREBASE_APP,
     RealtimePublisher,
+    HumanVerifier,
+    StorageService,
   ],
 })
 export class InfraModule {}

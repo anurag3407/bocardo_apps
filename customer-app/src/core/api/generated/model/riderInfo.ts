@@ -10,8 +10,6 @@ export interface RiderInfo {
   id: string;
   /** @nullable */
   name: string | null;
-  /** @nullable */
-  phone: string | null;
   vehicleType: string;
   /** @nullable */
   vehicleNumber: string | null;

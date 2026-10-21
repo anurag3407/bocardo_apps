@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Badge, Button, Card, DataTable, ErrorNote, PageHeader } from '@/components/ui';
 import { adminOpsCancel, adminOpsReassign, adminOpsRefund, useAdminOpsOrder } from '@/core/api/generated/admin/admin';
 import { can } from '@/core/auth/claims';
@@ -54,7 +55,7 @@ export function OrderDetailView({ id }: { id: string }) {
             <dt className="text-muted">Customer</dt><dd>{o.customer.name} · {o.customer.phone}</dd>
             <dt className="text-muted">Deliver to</dt><dd>{[o.deliveryAddress.line1, o.deliveryAddress.line2, o.deliveryAddress.landmark].filter(Boolean).join(', ')}</dd>
             <dt className="text-muted">Restaurant</dt><dd>{o.restaurant.name} · {o.restaurant.phone}</dd>
-            <dt className="text-muted">Rider</dt><dd>{o.rider ? `${o.rider.name} · ${o.rider.phone ?? ''} · ${o.rider.vehicleNumber ?? ''}` : '—'}</dd>
+            <dt className="text-muted">Rider</dt><dd>{o.rider ? <Link className="text-brand" href={`/riders?q=${encodeURIComponent(o.rider.name ?? '')}`}>{o.rider.name} · {o.rider.vehicleNumber ?? ''}</Link> : '—'}</dd>
             <dt className="text-muted">ETA</dt><dd>{formatDateTime(o.estimatedDeliveryAt)}</dd>
             {o.cancelReason ? <><dt className="text-muted">Cancelled</dt><dd className="text-danger">{o.cancelReason} ({o.cancelledBy})</dd></> : null}
           </dl>
@@ -96,6 +97,30 @@ export function OrderDetailView({ id }: { id: string }) {
           { header: 'Event', cell: (e) => <span className="font-mono text-xs">{e.event}</span> },
           { header: 'Actor', cell: (e) => e.actorType },
           { header: 'Details', cell: (e) => <code className="text-xs text-muted">{Object.keys(e.metadata).length ? JSON.stringify(e.metadata) : ''}</code> },
+        ]}
+      />
+      {o.deliveryProofUrl ? (
+        <Card title="Proof of delivery" className="mt-4">
+          {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from Supabase Storage */}
+          <img src={o.deliveryProofUrl} alt="Doorstep photo taken by the rider" className="max-h-80 rounded-lg" />
+          <p className="mt-2 text-xs text-muted">
+            {o.deliveryProofLat && o.deliveryProofLng
+              ? `Taken at ${o.deliveryProofLat.toFixed(5)}, ${o.deliveryProofLng.toFixed(5)} (drop pin ${o.deliveryAddress.lat.toFixed(5)}, ${o.deliveryAddress.lng.toFixed(5)})`
+              : 'No GPS attached'}
+          </p>
+        </Card>
+      ) : null}
+      <h2 className="mb-2 mt-6 text-sm font-semibold">Masked calls</h2>
+      <DataTable
+        rows={o.calls}
+        rowKey={(c) => c.id}
+        empty="No calls on this order"
+        columns={[
+          { header: 'When', cell: (c) => formatDateTime(c.createdAt) },
+          { header: 'From → to', cell: (c) => `${c.callerRole} → ${c.calleeRole}` },
+          { header: 'Provider', cell: (c) => c.provider },
+          { header: 'Status', cell: (c) => <Badge tone={statusTone(c.status)}>{c.status}</Badge> },
+          { header: 'Duration', cell: (c) => (c.durationSeconds !== null ? `${c.durationSeconds}s` : '—') },
         ]}
       />
       <h2 className="mb-2 mt-6 text-sm font-semibold">Rider offers</h2>

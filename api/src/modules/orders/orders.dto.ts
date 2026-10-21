@@ -170,7 +170,6 @@ export const RiderInfoSchema = z
   .object({
     id: z.string(),
     name: z.string().nullable(),
-    phone: z.string().nullable(),
     vehicleType: z.string(),
     vehicleNumber: z.string().nullable(),
     ratingAvg: z.number(),
@@ -202,6 +201,8 @@ export const CustomerOrderSchema = z
     pricing: PriceBreakdownSchema,
     rider: RiderInfoSchema.nullable(),
     deliveryOtp: z.string().nullable(),
+    /** Signed, short-lived URL of the rider's doorstep photo (after delivery). */
+    deliveryProofUrl: z.string().nullable(),
     prepMinutes: z.number().int().nullable(),
     estimatedDeliveryAt: z.string().nullable(),
     customerNote: z.string().nullable(),

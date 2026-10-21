@@ -18,6 +18,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: 'app.bocardo.restaurant',
     googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST ?? './firebase/GoogleService-Info.plist',
+    // App Attest for Firebase App Check (OTP abuse protection)
+    entitlements: { 'com.apple.developer.devicecheck.appattest-environment': 'production' },
     infoPlist: { UIBackgroundModes: ['remote-notification'] },
   },
   android: {
@@ -40,6 +42,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['expo-notifications', { color: '#FF5A1F', defaultChannel: 'orders', sounds: ['./assets/sounds/order_ring.wav'] }],
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
+    '@react-native-firebase/app-check',
     ['expo-build-properties', { ios: { useFrameworks: 'static' } }],
     '@rnmapbox/maps',
   ],

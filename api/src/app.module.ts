@@ -8,12 +8,14 @@ import { ConfigModule } from './config/config.module';
 import { InfraModule } from './infra/infra.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { CallsModule } from './modules/calls/calls.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { DispatchModule } from './modules/dispatch/dispatch.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { HealthModule } from './modules/health/health.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { OtpModule } from './modules/otp/otp.module';
 import { PartnerModule } from './modules/partner/partner.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
@@ -33,6 +35,7 @@ import { PlatformModule } from './platform/platform.module';
     InfraModule,
     PlatformModule,
     HealthModule,
+    OtpModule,
     UsersModule,
     AddressesModule,
     ZonesModule,
@@ -45,6 +48,7 @@ import { PlatformModule } from './platform/platform.module';
     PartnerModule,
     FinanceModule,
     FeedbackModule,
+    CallsModule,
     AdminModule,
   ],
   providers: [

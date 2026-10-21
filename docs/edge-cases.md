@@ -80,3 +80,32 @@ Paths are relative to `api/src` unless they start with an app folder.
 | Push token rotated / app reinstalled | Token upserted on refresh; invalid tokens deleted after FCM reports them |
 | Old app versions | `app_config.min_app_version` → blocking "update required" screen |
 | Clock skew | Server timestamps only; client GPS timestamps sanity-checked |
+
+## Fleet power & proof of delivery
+| Case | Handling | Where |
+|---|---|---|
+| 5 s GPS drains a budget phone in ~3.5 h | Adaptive profiles: 30 s / 50 m balanced accuracy while idle, 10 s / 20 m high accuracy only during a trip | `rider-app/src/core/location/background-tracking.ts`, `DutyScreen.tsx` |
+| Xiaomi/Vivo/Oppo/OnePlus/Huawei kill background tracking | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` system dialog + deep link to the OEM autostart screen; warning before going online | `rider-app/src/core/power/battery-optimization.ts`, `features/power/PowerSetupCard.tsx` |
+| "Food not delivered" fraud | Camera-only doorstep photo (no gallery), uploaded to the rider's private storage folder, path + GPS verified by the API, required by default (`app_config.delivery.proofPhotoRequired`) | `rider-app/src/core/proof/delivery-photo.ts`, `api/src/modules/riders/riders.service.ts#validateProof` |
+| Rider claims customer was unreachable | Photo of the door required for `UNDELIVERED` too | same |
+| Dispute review | Photo (signed URL, 1 h) + photo GPS vs drop pin in the console; customer sees the photo in the app | `admin-panel/.../order-detail-view.tsx`, `customer-app/.../OrderScreen.tsx` |
+
+## Number masking
+| Case | Handling | Where |
+|---|---|---|
+| `tel:` links leaked personal numbers | Customer and rider phones removed from every API response; calls go through `POST /orders/:id/calls` | `api/src/modules/calls/` |
+| Who may call whom | Customer↔rider, either↔restaurant; only while active (+30 min grace after delivery); restaurant→customer stops at pickup | `calls/call-policy.ts` (unit tested) |
+| Harassment after the order | Same policy: no calls once closed | same |
+| Call spam | 6 calls / 10 min per user per order; 10-minute call cap | `calls.service.ts` |
+| Disputes ("rider never called") | Every call logged with provider ref; status/duration from provider callbacks; visible in the console | `call_logs`, `webhooks/telephony/:provider` |
+
+## SMS toll fraud (OTP pumping)
+| Case | Handling | Where |
+|---|---|---|
+| Bots spam the OTP endpoint to premium numbers | OTPs are only sent for numbers holding a single-use 3-min ticket from `POST /auth/otp-ticket`; Supabase's Send-SMS hook drops everything else | `api/src/modules/otp/` |
+| Scripted clients | Ticket requires a limited-use Firebase App Check token (Play Integrity / App Attest; replay rejected) or Cloudflare Turnstile for web | `infra/security/human-verifier.ts` |
+| International premium-rate ranges | Destination country allowlist (`app_config.otp.allowedCountryCodes`, default India) + Indian mobile prefix check | `otp/otp-rules.ts` (unit tested) |
+| Distributed attack | Per phone (3/10 min, 10/day), per IP (10/h) and a global hourly budget circuit breaker with an ops alert | `otp.service.ts` |
+| Forged hook calls | Standard Webhooks HMAC signature + timestamp tolerance | `otp-rules.ts#verifyStandardWebhook` (unit tested) |
+| Monitoring | `otp_send_log` (sent / blocked / failed) → console overview tiles | admin overview |
+| Indian operators drop unregistered SMS | MSG91 sends with DLT principal entity ID, content template ID and approved header | `infra/sms/msg91-sms-sender.ts` |

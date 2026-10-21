@@ -5,6 +5,7 @@
  * Customer, restaurant-partner, rider and admin endpoints. Money is in paise.
  * OpenAPI spec version: 1.0.0
  */
+import type { DeliveryProof } from './deliveryProof';
 
 export interface UndeliverableDto {
   /**
@@ -12,4 +13,5 @@ export interface UndeliverableDto {
      * @maxLength 300
      */
   reason: string;
+  proof?: DeliveryProof;
 }

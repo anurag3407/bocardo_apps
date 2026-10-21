@@ -35,6 +35,7 @@ export interface RiderOrder {
   payoutPaise: number;
   /** @nullable */
   customerNote: string | null;
+  proofPhotoRequired: boolean;
   /** @nullable */
   readyAt: string | null;
   /** @nullable */

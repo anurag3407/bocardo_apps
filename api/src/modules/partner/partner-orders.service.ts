@@ -163,7 +163,6 @@ export class PartnerOrdersService {
     const full = await this.reader.loadFull(orderId);
     if (full.order.restaurant_id !== restaurantId) throw AppError.notFound('Order');
     const { order } = full;
-    const active = ACTIVE_ORDER_STATUSES.includes(order.status);
     return {
       id: order.id,
       shortCode: order.short_code,
@@ -185,8 +184,8 @@ export class PartnerOrdersService {
           : null,
       rider: full.rider
         ? {
+            // riders are reached through masked calling, never by number
             name: full.rider.full_name,
-            phone: active ? full.rider.phone : null,
             vehicleNumber: full.rider.vehicle_number,
           }
         : null,

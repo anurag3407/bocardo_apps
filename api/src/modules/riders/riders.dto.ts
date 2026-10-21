@@ -96,7 +96,8 @@ export const RiderOrderSchema = z
       lat: z.number(),
       lng: z.number(),
     }),
-    customer: z.object({ name: z.string().nullable(), phone: z.string().nullable() }),
+    // personal numbers are never exposed — use POST /orders/:id/calls
+    customer: z.object({ name: z.string().nullable() }),
     dropAddress: DeliveryAddressSchema,
     items: z.array(
       z.object({
@@ -109,6 +110,8 @@ export const RiderOrderSchema = z
     collectPaise: z.number().int(),
     payoutPaise: z.number().int(),
     customerNote: z.string().nullable(),
+    /** A doorstep photo must be attached when completing this delivery. */
+    proofPhotoRequired: z.boolean(),
     readyAt: z.string().nullable(),
     estimatedDeliveryAt: z.string().nullable(),
     createdAt: z.string(),
@@ -125,9 +128,20 @@ export class RiderOrderPageDto extends createZodDto(
 ) {}
 export class RiderHistoryQueryDto extends createZodDto(CursorQuery) {}
 
-export class DeliverDto extends createZodDto(z.object({ otp: z.string().regex(/^\d{4}$/) })) {}
+const DeliveryProof = z
+  .object({
+    /** Object path in the private `delivery-proofs` bucket: `<riderId>/<orderId>/<file>.jpg`. */
+    path: z.string().max(300),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
+  })
+  .meta({ id: 'DeliveryProof' });
+
+export class DeliverDto extends createZodDto(
+  z.object({ otp: z.string().regex(/^\d{4}$/), proof: DeliveryProof.optional() }),
+) {}
 export class UndeliverableDto extends createZodDto(
-  z.object({ reason: z.string().trim().min(3).max(300) }),
+  z.object({ reason: z.string().trim().min(3).max(300), proof: DeliveryProof.optional() }),
 ) {}
 export class SosDto extends createZodDto(
   z.object({

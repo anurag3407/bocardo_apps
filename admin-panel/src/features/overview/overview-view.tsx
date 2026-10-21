@@ -28,6 +28,15 @@ export function OverviewView() {
             <Stat label="Pending approvals" value={o.pendingRestaurants + o.pendingRiders} hint={`${o.pendingRestaurants} restaurants · ${o.pendingRiders} riders`} />
             <Stat label="Open tickets" value={o.openTickets} />
           </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat label="OTP SMS sent (1h)" value={o.otpSentLastHour} hint="Billed SMS" />
+            <Stat
+              label="OTP requests blocked (1h)"
+              value={o.otpBlockedLastHour}
+              tone={o.otpBlockedLastHour > 50 ? 'danger' : undefined}
+              hint="No verified ticket — likely bots / SMS pumping"
+            />
+          </div>
           <div>
             <h2 className="mb-2 text-sm font-semibold">Active orders by stage</h2>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">

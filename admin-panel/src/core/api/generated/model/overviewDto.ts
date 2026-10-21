@@ -66,4 +66,14 @@ export interface OverviewDto {
      * @maximum 9007199254740991
      */
   openTickets: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  otpSentLastHour: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  otpBlockedLastHour: number;
 }

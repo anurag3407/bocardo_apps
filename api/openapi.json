@@ -29,6 +29,55 @@
         ]
       }
     },
+    "/auth/otp-ticket": {
+      "post": {
+        "operationId": "Otp_ticket",
+        "parameters": [
+          {
+            "name": "x-firebase-appcheck",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Firebase-AppCheck",
+            "in": "header",
+            "description": "Limited-use Firebase App Check token (mobile apps)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpTicketResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/me": {
       "get": {
         "operationId": "Users_me",
@@ -2762,6 +2811,51 @@
         ]
       }
     },
+    "/orders/{id}/calls": {
+      "post": {
+        "operationId": "Calls_start",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartCallDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "calls"
+        ]
+      }
+    },
     "/admin/overview": {
       "get": {
         "operationId": "AdminOps_overview",
@@ -4338,6 +4432,41 @@
       }
     },
     "schemas": {
+      "OtpTicketDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 20
+          },
+          "turnstileToken": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "OtpTicketResultDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "phone",
+          "expiresInSeconds"
+        ],
+        "additionalProperties": false
+      },
       "Profile": {
         "type": "object",
         "properties": {
@@ -5748,6 +5877,10 @@
             "type": "string",
             "nullable": true
           },
+          "deliveryProofUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "prepMinutes": {
             "nullable": true,
             "type": "integer",
@@ -5803,6 +5936,7 @@
           "pricing",
           "rider",
           "deliveryOtp",
+          "deliveryProofUrl",
           "prepMinutes",
           "estimatedDeliveryAt",
           "customerNote",
@@ -5854,10 +5988,6 @@
             "type": "string",
             "nullable": true
           },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
           "vehicleType": {
             "type": "string"
           },
@@ -5884,7 +6014,6 @@
         "required": [
           "id",
           "name",
-          "phone",
           "vehicleType",
           "vehicleNumber",
           "ratingAvg",
@@ -6525,15 +6654,10 @@
               "name": {
                 "type": "string",
                 "nullable": true
-              },
-              "phone": {
-                "type": "string",
-                "nullable": true
               }
             },
             "required": [
-              "name",
-              "phone"
+              "name"
             ],
             "additionalProperties": false
           },
@@ -6587,6 +6711,9 @@
             "type": "string",
             "nullable": true
           },
+          "proofPhotoRequired": {
+            "type": "boolean"
+          },
           "readyAt": {
             "type": "string",
             "nullable": true
@@ -6616,6 +6743,7 @@
           "collectPaise",
           "payoutPaise",
           "customerNote",
+          "proofPhotoRequired",
           "readyAt",
           "estimatedDeliveryAt",
           "createdAt",
@@ -6668,12 +6796,37 @@
         ],
         "additionalProperties": false
       },
+      "DeliveryProof": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
       "DeliverDto": {
         "type": "object",
         "properties": {
           "otp": {
             "type": "string",
             "pattern": "^\\d{4}$"
+          },
+          "proof": {
+            "$ref": "#/components/schemas/DeliveryProof"
           }
         },
         "required": [
@@ -6687,6 +6840,9 @@
             "type": "string",
             "minLength": 3,
             "maxLength": 300
+          },
+          "proof": {
+            "$ref": "#/components/schemas/DeliveryProof"
           }
         },
         "required": [
@@ -7475,10 +7631,6 @@
                 "type": "string",
                 "nullable": true
               },
-              "phone": {
-                "type": "string",
-                "nullable": true
-              },
               "vehicleNumber": {
                 "type": "string",
                 "nullable": true
@@ -7486,7 +7638,6 @@
             },
             "required": [
               "name",
-              "phone",
               "vehicleNumber"
             ],
             "additionalProperties": false
@@ -7786,6 +7937,47 @@
           "$ref": "#/components/schemas/SupportTicket"
         }
       },
+      "StartCallDto": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": [
+              "customer",
+              "rider",
+              "restaurant"
+            ]
+          }
+        },
+        "required": [
+          "target"
+        ]
+      },
+      "CallResultDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "callback",
+              "direct"
+            ]
+          },
+          "dial": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "dial",
+          "message"
+        ],
+        "additionalProperties": false
+      },
       "OverviewDto": {
         "type": "object",
         "properties": {
@@ -7855,6 +8047,16 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "otpSentLastHour": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "otpBlockedLastHour": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -7870,7 +8072,9 @@
           "dispatchFailed",
           "pendingRestaurants",
           "pendingRiders",
-          "openTickets"
+          "openTickets",
+          "otpSentLastHour",
+          "otpBlockedLastHour"
         ],
         "additionalProperties": false
       },
@@ -8195,6 +8399,10 @@
             "type": "string",
             "nullable": true
           },
+          "deliveryProofUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "prepMinutes": {
             "nullable": true,
             "type": "integer",
@@ -8436,6 +8644,56 @@
               ],
               "additionalProperties": false
             }
+          },
+          "calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "callerRole": {
+                  "type": "string"
+                },
+                "calleeRole": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "durationSeconds": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "callerRole",
+                "calleeRole",
+                "provider",
+                "status",
+                "durationSeconds",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "deliveryProofLat": {
+            "type": "number",
+            "nullable": true
+          },
+          "deliveryProofLng": {
+            "type": "number",
+            "nullable": true
           }
         },
         "required": [
@@ -8451,6 +8709,7 @@
           "pricing",
           "rider",
           "deliveryOtp",
+          "deliveryProofUrl",
           "prepMinutes",
           "estimatedDeliveryAt",
           "customerNote",
@@ -8465,7 +8724,10 @@
           "events",
           "payments",
           "refunds",
-          "offers"
+          "offers",
+          "calls",
+          "deliveryProofLat",
+          "deliveryProofLng"
         ],
         "additionalProperties": false
       },

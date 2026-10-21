@@ -21,6 +21,7 @@ export * from './adminOpsOrdersParams';
 export * from './adminOpsOrdersStatus';
 export * from './adminOpsOverviewParams';
 export * from './adminOrderDetailDto';
+export * from './adminOrderDetailDtoCallsItem';
 export * from './adminOrderDetailDtoCustomer';
 export * from './adminOrderDetailDtoEventsItem';
 export * from './adminOrderDetailDtoEventsItemMetadata';

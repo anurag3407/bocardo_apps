@@ -171,7 +171,6 @@ export const PartnerOrderSchema = z
     rider: z
       .object({
         name: z.string().nullable(),
-        phone: z.string().nullable(),
         vehicleNumber: z.string().nullable(),
       })
       .nullable(),

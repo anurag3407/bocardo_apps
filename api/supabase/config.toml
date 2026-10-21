@@ -59,3 +59,11 @@ verify_enabled = true
 [auth.hook.custom_access_token]
 enabled = true
 uri = "pg-functions://postgres/public/custom_access_token_hook"
+
+# SMS pumping protection: Supabase hands every OTP to the API, which only sends it (via MSG91,
+# DLT-registered template) if the app first obtained a verified ticket from POST /auth/otp-ticket.
+# Enable once the API is reachable from the Supabase containers; local demo phones use test_otp above.
+# [auth.hook.send_sms]
+# enabled = true
+# uri = "http://host.docker.internal:4000/webhooks/auth/send-sms"
+# secrets = "env(SUPABASE_SEND_SMS_HOOK_SECRET)"

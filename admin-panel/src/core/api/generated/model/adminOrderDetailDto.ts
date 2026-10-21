@@ -5,6 +5,7 @@
  * Customer, restaurant-partner, rider and admin endpoints. Money is in paise.
  * OpenAPI spec version: 1.0.0
  */
+import type { AdminOrderDetailDtoCallsItem } from './adminOrderDetailDtoCallsItem';
 import type { AdminOrderDetailDtoCustomer } from './adminOrderDetailDtoCustomer';
 import type { AdminOrderDetailDtoEventsItem } from './adminOrderDetailDtoEventsItem';
 import type { AdminOrderDetailDtoOffersItem } from './adminOrderDetailDtoOffersItem';
@@ -35,6 +36,8 @@ export interface AdminOrderDetailDto {
   rider: RiderInfo | null;
   /** @nullable */
   deliveryOtp: string | null;
+  /** @nullable */
+  deliveryProofUrl: string | null;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991
@@ -60,4 +63,9 @@ export interface AdminOrderDetailDto {
   payments: AdminOrderDetailDtoPaymentsItem[];
   refunds: AdminOrderDetailDtoRefundsItem[];
   offers: AdminOrderDetailDtoOffersItem[];
+  calls: AdminOrderDetailDtoCallsItem[];
+  /** @nullable */
+  deliveryProofLat: number | null;
+  /** @nullable */
+  deliveryProofLng: number | null;
 }

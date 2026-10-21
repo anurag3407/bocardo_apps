@@ -5,8 +5,10 @@
  * Customer, restaurant-partner, rider and admin endpoints. Money is in paise.
  * OpenAPI spec version: 1.0.0
  */
+import type { DeliveryProof } from './deliveryProof';
 
 export interface DeliverDto {
   /** @pattern ^\d{4}$ */
   otp: string;
+  proof?: DeliveryProof;
 }

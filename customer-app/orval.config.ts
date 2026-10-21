@@ -9,7 +9,7 @@ export default defineConfig({
     input: {
       target: '../api/openapi.json',
       // only the endpoints this app uses
-      filters: { tags: ['users', 'addresses', 'zones', 'catalog', 'promotions', 'orders', 'payments', 'feedback'] },
+      filters: { tags: ['users', 'addresses', 'zones', 'catalog', 'promotions', 'orders', 'payments', 'feedback', 'calls'] },
     },
     output: {
       mode: 'tags-split',

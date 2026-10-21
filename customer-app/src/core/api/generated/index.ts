@@ -1,4 +1,5 @@
 export * from './addresses/addresses';
+export * from './calls/calls';
 export * from './catalog/catalog';
 export * from './feedback/feedback';
 export * from './orders/orders';

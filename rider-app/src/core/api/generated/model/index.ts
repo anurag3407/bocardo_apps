@@ -8,12 +8,15 @@
 
 export * from './activeRiderOrderDto';
 export * from './appConfigDto';
+export * from './callResultDto';
+export * from './callResultDtoMode';
 export * from './createTicketDto';
 export * from './createTicketDtoApp';
 export * from './createTicketDtoCategory';
 export * from './currentOfferDto';
 export * from './deliverDto';
 export * from './deliveryAddress';
+export * from './deliveryProof';
 export * from './dispatchStatus';
 export * from './earningsDto';
 export * from './earningsDtoDaysItem';
@@ -50,6 +53,8 @@ export * from './riderProfileVehicleType';
 export * from './ridersEarningsParams';
 export * from './ridersHistoryParams';
 export * from './sosDto';
+export * from './startCallDto';
+export * from './startCallDtoTarget';
 export * from './supportTicket';
 export * from './supportTicketApp';
 export * from './supportTicketStatus';

@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@react-native-firebase/app": "^27.0.0",
+    "@react-native-firebase/app-check": "^27.0.0",
     "@react-native-firebase/messaging": "^27.0.0",
     "@rnmapbox/maps": "^10.3.11",
     "@supabase/supabase-js": "^2.118.0",

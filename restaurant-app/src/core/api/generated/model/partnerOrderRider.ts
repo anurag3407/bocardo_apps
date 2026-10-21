@@ -13,7 +13,5 @@ export type PartnerOrderRider = {
   /** @nullable */
   name: string | null;
   /** @nullable */
-  phone: string | null;
-  /** @nullable */
   vehicleNumber: string | null;
 } | null;

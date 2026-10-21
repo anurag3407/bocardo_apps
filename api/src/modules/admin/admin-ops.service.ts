@@ -40,7 +40,7 @@ export class AdminOpsService {
 
   async overview(cityId?: string): Promise<OverviewDto> {
     const today = startOfTodayIst();
-    const [active, todayStats, riders, restaurants, tickets] = await Promise.all([
+    const [active, todayStats, riders, restaurants, tickets, otp] = await Promise.all([
       this.db
         .selectFrom('orders')
         .select(['status', (eb) => eb.fn.countAll<number>().as('n')])
@@ -93,6 +93,14 @@ export class AdminOpsService {
         .select((eb) => eb.fn.countAll<number>().as('n'))
         .where('status', 'in', ['open', 'in_progress'])
         .executeTakeFirstOrThrow(),
+      this.db
+        .selectFrom('otp_send_log')
+        .select([
+          sql<number>`count(*) filter (where outcome = 'sent')`.as('sent'),
+          sql<number>`count(*) filter (where outcome = 'blocked_no_ticket')`.as('blocked'),
+        ])
+        .where('created_at', '>', new Date(Date.now() - 3_600_000))
+        .executeTakeFirstOrThrow(),
     ]);
 
     return {
@@ -112,6 +120,8 @@ export class AdminOpsService {
       pendingRestaurants: Number(restaurants.pending),
       pendingRiders: Number(riders.pending),
       openTickets: Number(tickets.n),
+      otpSentLastHour: Number(otp.sent),
+      otpBlockedLastHour: Number(otp.blocked),
     };
   }
 
@@ -263,7 +273,7 @@ export class AdminOpsService {
   async orderDetail(orderId: string): Promise<AdminOrderDetailDto> {
     const full = await this.reader.loadFull(orderId);
     const base = await this.reader.customerView(orderId, full.order.customer_id);
-    const [payments, refunds, offers] = await Promise.all([
+    const [payments, refunds, offers, calls] = await Promise.all([
       this.db
         .selectFrom('payments')
         .selectAll()
@@ -292,10 +302,27 @@ export class AdminOpsService {
         .where('f.order_id', '=', orderId)
         .orderBy('f.created_at')
         .execute(),
+      this.db
+        .selectFrom('call_logs')
+        .selectAll()
+        .where('order_id', '=', orderId)
+        .orderBy('created_at')
+        .execute(),
     ]);
     return {
       ...base,
       deliveryOtp: null,
+      deliveryProofLat: full.order.delivery_proof_lat,
+      deliveryProofLng: full.order.delivery_proof_lng,
+      calls: calls.map((c) => ({
+        id: c.id,
+        callerRole: c.caller_role,
+        calleeRole: c.callee_role,
+        provider: c.provider,
+        status: c.status,
+        durationSeconds: c.duration_seconds,
+        createdAt: c.created_at.toISOString(),
+      })),
       customer: { id: full.customer.id, name: full.customer.full_name, phone: full.customer.phone },
       events: full.events.map((e) => ({
         id: e.id,

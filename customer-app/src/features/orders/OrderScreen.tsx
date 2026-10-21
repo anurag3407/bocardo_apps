@@ -1,13 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Linking, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Alert, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { getOrdersDetailQueryKey, ordersCancel, ordersPaymentSession, useOrdersDetail } from '@/core/api/generated/orders/orders';
 import { paymentsVerify } from '@/core/api/generated/payments/payments';
 import { DeliveryMap } from '@/core/maps/delivery-map';
 import type { MapMarker } from '@/core/maps/map-types';
 import { CheckoutCancelled, openCheckout } from '@/core/payments/checkout';
+import { startCall } from '@/core/calls/start-call';
 import { useRealtime } from '@/core/realtime/use-realtime';
 import * as Crypto from 'expo-crypto';
 import { formatPaise, formatTime, minutesUntil } from '@/lib/format';
@@ -111,8 +113,15 @@ export function OrderScreen() {
               <Text variant="heading">🛵 {o.rider.name ?? 'Delivery partner'}</Text>
               <Text variant="caption" muted>{o.rider.vehicleNumber} · ★ {o.rider.ratingAvg.toFixed(1)}</Text>
             </View>
-            {o.rider.phone ? <Button title="Call" kind="secondary" onPress={() => Linking.openURL(`tel:${o.rider!.phone}`)} /> : null}
+            {active ? <Button title="Call" kind="secondary" onPress={() => void startCall(id, 'rider')} /> : null}
           </Row>
+        </Card>
+      ) : null}
+
+      {o.deliveryProofUrl ? (
+        <Card style={{ gap: spacing.sm }}>
+          <Text variant="label">{o.status === 'DELIVERED' ? 'Delivered here' : 'Delivery partner reached your door'}</Text>
+          <Image source={o.deliveryProofUrl} style={{ width: '100%', height: 220, borderRadius: 12 }} contentFit="cover" accessibilityLabel="Photo of the delivered package" />
         </Card>
       ) : null}
 

@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, Linking } from 'react-native';
+import { Alert } from 'react-native';
+import { startCall } from '@/core/calls/start-call';
 import { usePartnerOrder } from '@/core/api/generated/partner/partner';
 import { useCurrentRestaurant } from '@/features/outlet/selected-restaurant';
 import { formatPaise, formatTime } from '@/lib/format';
@@ -40,11 +41,14 @@ export function OrderDetailScreen() {
         <Row justify="space-between"><Text variant="label">Item total</Text><Text variant="label">{formatPaise(o.itemTotalPaise)}</Text></Row>
       </Card>
       {o.customerNote ? <Card><Text>📝 {o.customerNote}</Text></Card> : null}
+      {['PLACED', 'ACCEPTED', 'READY'].includes(o.status) ? (
+        <Button title={`Call ${o.customerName} (masked number)`} kind="ghost" onPress={() => void startCall(id, 'customer')} />
+      ) : null}
       {o.rider ? (
         <Card>
           <Row justify="space-between">
             <Text>🛵 {o.rider.name} · {o.rider.vehicleNumber}</Text>
-            {o.rider.phone ? <Button title="Call" kind="secondary" onPress={() => Linking.openURL(`tel:${o.rider!.phone}`)} /> : null}
+            {o.status !== 'DELIVERED' ? <Button title="Call" kind="secondary" onPress={() => void startCall(id, 'rider')} /> : null}
           </Row>
         </Card>
       ) : null}

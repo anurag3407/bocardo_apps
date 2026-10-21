@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
@@ -13,7 +14,10 @@ import {
   ridersSos,
   ridersUndeliverable,
 } from '@/core/api/generated/rider/rider';
+import { useSession } from '@/core/auth/session-store';
+import { startCall } from '@/core/calls/start-call';
 import { currentPosition, navigationUrl } from '@/core/location/background-tracking';
+import { captureDoorstepPhoto, uploadDoorstepPhoto } from '@/core/proof/delivery-photo';
 import { DeliveryMap } from '@/core/maps/delivery-map';
 import { formatPaise } from '@/lib/format';
 import { Badge, Button, Card, Input, Row, spacing, Text, useTheme } from '@/ui';
@@ -24,8 +28,11 @@ const idem = () => ({ headers: { 'Idempotency-Key': Crypto.randomUUID() } });
 export function TripPanel({ order: o }: { order: RiderOrder }) {
   const t = useTheme();
   const qc = useQueryClient();
+  const riderId = useSession((s) => s.session?.user.id);
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
+  const [photo, setPhoto] = useState<{ uri: string; path: string | null; lat?: number; lng?: number } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const toRestaurant = o.dispatchStatus === 'ASSIGNED' || o.dispatchStatus === 'AT_RESTAURANT';
   const target = toRestaurant ? o.restaurant : o.dropAddress;
 
@@ -49,11 +56,33 @@ export function TripPanel({ order: o }: { order: RiderOrder }) {
     ]);
   };
 
-  const unreachable = () =>
+  /** Doorstep photo: the rider's evidence against "food not delivered" claims. */
+  const takePhoto = async () => {
+    try {
+      const uri = await captureDoorstepPhoto();
+      if (!uri || !riderId) return;
+      const pos = await currentPosition().catch(() => null);
+      setPhoto({ uri, path: null, ...(pos ?? {}) });
+      setUploading(true);
+      const path = await uploadDoorstepPhoto(riderId, o.id, uri);
+      setPhoto((p) => (p ? { ...p, path } : p));
+    } catch (e) {
+      Alert.alert('Photo not saved', errorMessage(e));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const proof = photo?.path ? { path: photo.path, lat: photo.lat, lng: photo.lng } : undefined;
+  const photoMissing = o.proofPhotoRequired && !proof;
+
+  const unreachable = () => {
+    if (photoMissing) return Alert.alert('Photo needed', 'Take a photo of the door first as proof that you reached the address.');
     Alert.alert('Customer unreachable?', 'Call the customer first. You can mark undeliverable after waiting 10 minutes.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Mark undeliverable', style: 'destructive', onPress: () => run(() => ridersUndeliverable(o.id, { reason: 'Customer unreachable at doorstep' }, idem())) },
+      { text: 'Mark undeliverable', style: 'destructive', onPress: () => run(() => ridersUndeliverable(o.id, { reason: 'Customer unreachable at doorstep', proof }, idem())) },
     ]);
+  };
 
   const sos = () =>
     Alert.alert('Send SOS?', 'Bocardo safety team will be alerted with your live location.', [
@@ -91,9 +120,8 @@ export function TripPanel({ order: o }: { order: RiderOrder }) {
         {!toRestaurant && o.customerNote ? <Text color={t.warning}>📝 {o.customerNote}</Text> : null}
         <Row>
           <Button title="Navigate" kind="secondary" onPress={() => Linking.openURL(navigationUrl(target.lat, target.lng))} style={{ flex: 1 }} />
-          {(toRestaurant ? o.restaurant.phone : o.customer.phone) ? (
-            <Button title="Call" kind="ghost" onPress={() => Linking.openURL(`tel:${toRestaurant ? o.restaurant.phone : o.customer.phone}`)} style={{ flex: 1 }} />
-          ) : null}
+          {/* masked call: the customer's number is never shown to the rider */}
+          <Button title="Call" kind="ghost" onPress={() => void startCall(o.id, toRestaurant ? 'restaurant' : 'customer')} style={{ flex: 1 }} />
         </Row>
       </Card>
 
@@ -116,7 +144,23 @@ export function TripPanel({ order: o }: { order: RiderOrder }) {
         <Card style={{ gap: spacing.md }}>
           {o.paymentMethod === 'cod' ? <Text variant="heading" color={t.warning}>Collect {formatPaise(o.collectPaise)} in cash</Text> : null}
           <Input label="Delivery OTP from customer" keyboardType="number-pad" maxLength={4} value={otp} onChangeText={setOtp} style={{ fontSize: 22, letterSpacing: 8, textAlign: 'center' }} />
-          <Button title="Complete delivery" size="lg" disabled={otp.length !== 4} loading={busy} onPress={() => run(() => ridersDeliver(o.id, { otp }, idem()).then(() => setOtp('')))} />
+          <Row>
+            {photo ? <Image source={photo.uri} style={{ width: 64, height: 64, borderRadius: 8 }} contentFit="cover" /> : null}
+            <Button
+              title={photo ? (uploading ? 'Uploading…' : photo.path ? 'Retake photo' : 'Retry photo') : `Photo of package at door${o.proofPhotoRequired ? ' *' : ''}`}
+              kind="secondary"
+              loading={uploading}
+              onPress={takePhoto}
+              style={{ flex: 1 }}
+            />
+          </Row>
+          <Button
+            title={photoMissing ? 'Add doorstep photo to finish' : 'Complete delivery'}
+            size="lg"
+            disabled={otp.length !== 4 || photoMissing || uploading}
+            loading={busy}
+            onPress={() => run(() => ridersDeliver(o.id, { otp, proof }, idem()).then(() => setOtp('')))}
+          />
           <Button title="Customer unreachable" kind="ghost" onPress={unreachable} />
         </Card>
       ) : null}

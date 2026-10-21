@@ -19,14 +19,12 @@ export class NotificationsService {
       .insertInto('device_tokens')
       .values({ user_id: userId, app: input.app, token: input.token, platform: input.platform })
       .onConflict((oc) =>
-        oc
-          .column('token')
-          .doUpdateSet({
-            user_id: userId,
-            app: input.app,
-            platform: input.platform,
-            updated_at: new Date(),
-          }),
+        oc.column('token').doUpdateSet({
+          user_id: userId,
+          app: input.app,
+          platform: input.platform,
+          updated_at: new Date(),
+        }),
       )
       .execute();
   }

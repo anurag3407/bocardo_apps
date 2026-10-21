@@ -5,6 +5,7 @@ import { ENV, type Env } from '../../config/env';
 import { DB, type Db, type Executor } from '../../infra/database/database';
 import type { Order } from '../../infra/database/db.types';
 import { KV_STORE, type KvStore } from '../../infra/kv/kv-store';
+import { StorageService } from '../../infra/storage/storage.service';
 import { trackingKeys, type LiveLocation } from '../tracking/tracking.keys';
 import { deliveryOtp } from './domain/delivery-otp';
 import { ACTIVE_ORDER_STATUSES } from './domain/order-state-machine';
@@ -17,7 +18,18 @@ export class OrderReader {
     @Inject(DB) private readonly db: Db,
     @Inject(KV_STORE) private readonly kv: KvStore,
     @Inject(ENV) private readonly env: Env,
+    private readonly storage: StorageService,
   ) {}
+
+  /** Signed URL for the doorstep photo, visible to the order's parties after hand-off. */
+  async proofUrl(order: Order): Promise<string | null> {
+    if (
+      !order.delivery_proof_path ||
+      (order.status !== 'DELIVERED' && order.status !== 'UNDELIVERED')
+    )
+      return null;
+    return this.storage.signedUrl('delivery-proofs', order.delivery_proof_path, 3600);
+  }
 
   async loadFull(orderId: string, executor: Executor = this.db) {
     const order = await executor
@@ -113,9 +125,8 @@ export class OrderReader {
       rider: full.rider
         ? {
             id: full.rider.id,
+            // no phone number: calls go through the masked-calling endpoint
             name: full.rider.full_name,
-            // contact details only while the delivery is in progress
-            phone: active ? full.rider.phone : null,
             vehicleType: full.rider.vehicle_type,
             vehicleNumber: full.rider.vehicle_number,
             ratingAvg: Math.round(full.rider.rating_avg * 10) / 10,
@@ -128,6 +139,7 @@ export class OrderReader {
         active && order.status !== 'PAYMENT_PENDING'
           ? deliveryOtp(this.env.APP_SECRET, order.id)
           : null,
+      deliveryProofUrl: await this.proofUrl(order),
       prepMinutes: order.prep_minutes,
       estimatedDeliveryAt: iso(order.estimated_delivery_at),
       customerNote: order.customer_note,

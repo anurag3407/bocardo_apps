@@ -33,6 +33,9 @@ export class OverviewDto extends createZodDto(
     pendingRestaurants: z.number().int(),
     pendingRiders: z.number().int(),
     openTickets: z.number().int(),
+    /** SMS fraud monitoring: OTPs actually sent vs requests blocked for lacking a verified ticket. */
+    otpSentLastHour: z.number().int(),
+    otpBlockedLastHour: z.number().int(),
   }),
 ) {}
 
@@ -137,6 +140,19 @@ export class AdminOrderDetailDto extends createZodDto(
         createdAt: z.string(),
       }),
     ),
+    calls: z.array(
+      z.object({
+        id: z.string(),
+        callerRole: z.string(),
+        calleeRole: z.string(),
+        provider: z.string(),
+        status: z.string(),
+        durationSeconds: z.number().int().nullable(),
+        createdAt: z.string(),
+      }),
+    ),
+    deliveryProofLat: z.number().nullable(),
+    deliveryProofLng: z.number().nullable(),
   }),
 ) {}
 

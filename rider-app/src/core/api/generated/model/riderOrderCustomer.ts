@@ -9,6 +9,4 @@
 export type RiderOrderCustomer = {
   /** @nullable */
   name: string | null;
-  /** @nullable */
-  phone: string | null;
 };

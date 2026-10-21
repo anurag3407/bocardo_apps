@@ -146,7 +146,7 @@ export class RidersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: DeliverDto,
   ) {
-    return this.riders.deliver(user.id, id, body.otp);
+    return this.riders.deliver(user.id, id, body.otp, body.proof);
   }
 
   @Roles('rider')
@@ -158,7 +158,7 @@ export class RidersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UndeliverableDto,
   ) {
-    return this.riders.undeliverable(user.id, id, body.reason);
+    return this.riders.undeliverable(user.id, id, body.reason, body.proof);
   }
 
   @Roles('rider')

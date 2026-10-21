@@ -318,6 +318,9 @@ export interface OrdersTable {
   prep_minutes: number | null;
   estimated_delivery_at: NullableTimestamp;
   delivery_otp_hash: string;
+  delivery_proof_path: string | null;
+  delivery_proof_lat: number | null;
+  delivery_proof_lng: number | null;
   customer_note: string | null;
   cancel_reason: string | null;
   cancelled_by: ActorType | null;
@@ -494,6 +497,29 @@ export interface AuditLogsTable {
   created_at: Generated<Date>;
 }
 
+export interface CallLogsTable {
+  id: Id;
+  order_id: string;
+  caller_id: string;
+  caller_role: ActorType;
+  callee_role: ActorType;
+  provider: string;
+  provider_ref: string | null;
+  status: Generated<string>;
+  duration_seconds: number | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export interface OtpSendLogTable {
+  id: Generated<number>;
+  phone: string;
+  outcome: 'sent' | 'blocked_no_ticket' | 'failed';
+  provider: string;
+  error: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface AppConfigTable {
   key: string;
   value: Json<unknown>;
@@ -532,6 +558,8 @@ export interface Database {
   outbox: OutboxTable;
   audit_logs: AuditLogsTable;
   app_config: AppConfigTable;
+  call_logs: CallLogsTable;
+  otp_send_log: OtpSendLogTable;
 }
 
 export type Order = Selectable<OrdersTable>;

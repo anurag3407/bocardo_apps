@@ -17,6 +17,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: 'app.bocardo.rider',
     googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST ?? './firebase/GoogleService-Info.plist',
+    // App Attest for Firebase App Check (OTP abuse protection)
+    entitlements: { 'com.apple.developer.devicecheck.appattest-environment': 'production' },
     infoPlist: { UIBackgroundModes: ['remote-notification', 'location', 'fetch'] },
   },
   android: {
@@ -32,6 +34,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'ACCESS_COARSE_LOCATION',
       'ACCESS_FINE_LOCATION',
       'ACCESS_BACKGROUND_LOCATION',
+      // lets the app ask to be exempt from Doze/battery optimisation (allowed for delivery apps)
+      'REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+      'CAMERA',
       'FOREGROUND_SERVICE',
       'FOREGROUND_SERVICE_LOCATION',
       'POST_NOTIFICATIONS',
@@ -51,9 +56,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     ['expo-audio', { microphonePermission: false, recordAudioAndroid: false }],
+    ['expo-image-picker', { cameraPermission: 'Bocardo Rider uses the camera to photograph delivered packages as proof of delivery.', photosPermission: false, microphonePermission: false }],
     ['expo-notifications', { color: '#FF5A1F', defaultChannel: 'offers', sounds: ['./assets/sounds/order_ring.wav'] }],
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
+    '@react-native-firebase/app-check',
     ['expo-build-properties', { ios: { useFrameworks: 'static' } }],
     '@rnmapbox/maps',
   ],

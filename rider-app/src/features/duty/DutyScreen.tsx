@@ -1,9 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Switch, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { getRidersActiveQueryKey, getRidersCurrentOfferQueryKey, getRidersMeQueryKey, ridersOffline, ridersOnline, useRidersActive, useRidersCurrentOffer, useRidersMe } from '@/core/api/generated/rider/rider';
-import { currentPosition, startTracking, stopTracking } from '@/core/location/background-tracking';
+import { currentPosition, setTrackingMode, startTracking, stopTracking } from '@/core/location/background-tracking';
+import { isBatteryRestricted, requestUnrestrictedBattery } from '@/core/power/battery-optimization';
+import { PowerSetupCard } from '@/features/power/PowerSetupCard';
 import { DeliveryMap } from '@/core/maps/delivery-map';
 import { useRealtime } from '@/core/realtime/use-realtime';
 import { TripPanel } from '@/features/trip/TripPanel';
@@ -30,6 +32,11 @@ export function DutyScreen() {
 
   useRealtime(me.data ? `rider:${me.data.id}` : null, refreshAll);
 
+  // high-frequency GPS only while a customer is watching the trip
+  useEffect(() => {
+    if (online) void setTrackingMode(hasTrip ? 'active' : 'idle').catch(() => undefined);
+  }, [online, hasTrip]);
+
   if (me.isLoading) return <Loading />;
   if (me.error || !me.data) return <ErrorState error={me.error} onRetry={() => me.refetch()} />;
   const rider = me.data;
@@ -46,10 +53,19 @@ export function DutyScreen() {
   }
 
   const toggle = async (next: boolean) => {
+    if (next && (await isBatteryRestricted())) {
+      const proceed = await new Promise<boolean>((resolve) =>
+        Alert.alert('Battery saver may stop tracking', 'Allow Bocardo to run in the background so you do not miss orders.', [
+          { text: 'Allow', onPress: () => void requestUnrestrictedBattery().finally(() => resolve(false)) },
+          { text: 'Go online anyway', style: 'destructive', onPress: () => resolve(true) },
+        ]),
+      );
+      if (!proceed) return;
+    }
     setToggling(true);
     try {
       if (next) {
-        await startTracking();
+        await startTracking(hasTrip ? 'active' : 'idle');
         await ridersOnline(await currentPosition());
       } else {
         await ridersOffline();
@@ -77,6 +93,8 @@ export function DutyScreen() {
           <Switch value={online} disabled={toggling || hasTrip} onValueChange={toggle} trackColor={{ true: t.success }} />
         </Row>
       </Card>
+
+      <PowerSetupCard />
 
       {cashNearLimit ? (
         <Card style={{ backgroundColor: t.brandSoft }}>

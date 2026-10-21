@@ -20,6 +20,7 @@ const ALERT_LABEL: Record<string, string> = {
   dispatch_failed: 'No rider found',
   rider_stale: 'Rider stopped sending location',
   rider_sos: '🚨 Rider SOS',
+  otp_budget_exhausted: '⚠️ OTP hourly budget exhausted — possible SMS pumping attack',
 };
 
 /** Live ops: every active order and online rider on one map, plus a realtime alert feed. */
@@ -30,9 +31,10 @@ export function LiveView() {
 
   // one channel per city; "all cities" listens to every city's channel via the first few
   const topic = cityId ? `admin:ops:${cityId}` : cities[0] ? `admin:ops:${cities[0].id}` : null;
-  useRealtime(topic, (event, payload) =>
-    setAlerts((a) => [{ id: `${Date.now()}-${Math.random()}`, event, payload, at: new Date().toISOString() }, ...a].slice(0, 50)),
-  );
+  const pushAlert = (event: string, payload: Record<string, unknown>) =>
+    setAlerts((a) => [{ id: `${Date.now()}-${Math.random()}`, event, payload, at: new Date().toISOString() }, ...a].slice(0, 50));
+  useRealtime(topic, pushAlert);
+  useRealtime('admin:security', pushAlert);
 
   const points = useMemo<MapPoint[]>(() => {
     if (!live.data) return [];

@@ -38,6 +38,8 @@ service without the apps noticing.
 | `finance` | Double-entry ledger on delivery, COD cash tracking, payout runs |
 | `feedback` | Ratings, support tickets |
 | `admin` | Console API, every mutation audit-logged |
+| `calls` | Masked calling (Exotel/Twilio click-to-call bridge), call policy, call logs |
+| `otp` | SMS-pumping defence: App Check/Turnstile-verified OTP tickets, limits, Supabase Send-SMS hook, DLT SMS |
 | `platform/` | Outbox (+ processor), notifications, audit — shared plumbing |
 | `infra/` | Adapters behind interfaces: DB, KV (Upstash/memory), jobs (QStash/local), push (FCM/log), geo (Mapbox/haversine), payments (Razorpay/mock), realtime |
 
@@ -70,6 +72,11 @@ service without the apps noticing.
 9. **Graceful degradation.** Redis down → cache misses + Postgres rider fallback; Mapbox down →
    haversine ETAs; realtime down → apps poll; push down → realtime + polling.
 10. **Money is integer paise.** Settlement is double-entry and always sums to zero (unit tested).
+11. **Privacy by construction.** Personal phone numbers never leave the API; parties talk through a
+    masked number, and every call is logged for disputes.
+12. **Abuse economics.** SMS spend is gated by device/browser attestation, country allowlist, layered
+    rate limits and a global budget breaker; delivery fraud is countered by geotagged doorstep photos.
+13. **Battery-aware tracking.** GPS frequency follows what the data is used for (dispatch vs live tracking).
 
 ## Apps
 

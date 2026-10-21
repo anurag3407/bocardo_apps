@@ -3,7 +3,9 @@ import { AppError } from '../../common/errors/app-error';
 import { iso } from '../../common/http/schemas';
 import { DB, type Db } from '../../infra/database/database';
 import { RealtimePublisher, topics } from '../../infra/realtime/realtime-publisher';
+import { StorageService } from '../../infra/storage/storage.service';
 import { AuditService } from '../../platform/audit/audit.service';
+import { AppConfigService } from '../../platform/config/app-config.service';
 import { DispatchService } from '../dispatch/dispatch.service';
 import { RiderPool } from '../dispatch/rider-pool.service';
 import { verifyDeliveryOtp } from '../orders/domain/delivery-otp';
@@ -13,6 +15,8 @@ import { OrderWorkflow } from '../orders/order-workflow.service';
 import { UsersService } from '../users/users.service';
 import { ZonesService } from '../zones/zones.service';
 import type { RiderApplyDto, RiderOrderDto, RiderProfileDto, SosDto } from './riders.dto';
+
+type DeliveryProofInput = { path: string; lat?: number; lng?: number };
 
 /** Customer must have been unreachable at the door for this long before "undeliverable". */
 const DOORSTEP_WAIT_MS = 10 * 60 * 1000;
@@ -29,6 +33,8 @@ export class RidersService {
     private readonly reader: OrderReader,
     private readonly realtime: RealtimePublisher,
     private readonly audit: AuditService,
+    private readonly config: AppConfigService,
+    private readonly storage: StorageService,
   ) {}
 
   async apply(userId: string, input: RiderApplyDto): Promise<RiderProfileDto> {
@@ -273,7 +279,7 @@ export class RidersService {
     return this.orderView(riderId, orderId);
   }
 
-  async deliver(riderId: string, orderId: string, otp: string) {
+  async deliver(riderId: string, orderId: string, otp: string, proof?: DeliveryProofInput) {
     const order = await this.assertAssigned(riderId, orderId);
     if (!verifyDeliveryOtp(order.delivery_otp_hash, orderId, otp)) {
       throw AppError.unprocessable(
@@ -281,6 +287,12 @@ export class RidersService {
         'Incorrect OTP. Ask the customer for the 4-digit code in their app.',
       );
     }
+    const proofPatch = await this.validateProof(
+      riderId,
+      orderId,
+      proof,
+      (await this.deliveryConfig()).proofPhotoRequired,
+    );
     await this.workflow.run(async (tx) => {
       const actor = { type: 'rider' as const, id: riderId };
       await this.workflow.transition(tx, {
@@ -288,7 +300,10 @@ export class RidersService {
         to: 'DELIVERED',
         from: ['PICKED_UP'],
         actor,
-        patch: order.payment_method === 'cod' ? { payment_status: 'captured' } : {},
+        patch: {
+          ...proofPatch,
+          ...(order.payment_method === 'cod' ? { payment_status: 'captured' as const } : {}),
+        },
       });
       await this.workflow.setDispatch(tx, {
         orderId,
@@ -300,7 +315,12 @@ export class RidersService {
     return this.orderView(riderId, orderId);
   }
 
-  async undeliverable(riderId: string, orderId: string, reason: string) {
+  async undeliverable(
+    riderId: string,
+    orderId: string,
+    reason: string,
+    proof?: DeliveryProofInput,
+  ) {
     const order = await this.assertAssigned(riderId, orderId);
     if (order.dispatch_status !== 'AT_DROP')
       throw AppError.conflict(
@@ -323,6 +343,13 @@ export class RidersService {
         `Please wait ${minutes} more minute(s) and try calling the customer`,
       );
     }
+    // a photo of the door is the rider's evidence that they actually reached the customer
+    const proofPatch = await this.validateProof(
+      riderId,
+      orderId,
+      proof,
+      (await this.deliveryConfig()).proofPhotoRequired,
+    );
     await this.workflow.run(async (tx) => {
       const actor = { type: 'rider' as const, id: riderId };
       await this.workflow.transition(tx, {
@@ -330,11 +357,53 @@ export class RidersService {
         to: 'UNDELIVERED',
         from: ['PICKED_UP'],
         actor,
-        patch: { cancel_reason: reason, cancelled_by: 'rider' },
+        patch: { ...proofPatch, cancel_reason: reason, cancelled_by: 'rider' },
       });
       await this.workflow.setDispatch(tx, { orderId, to: 'DONE', actor });
     });
     return this.orderView(riderId, orderId);
+  }
+
+  deliveryConfig() {
+    return this.config.get('delivery', { proofPhotoRequired: true });
+  }
+
+  /**
+   * Doorstep photo (anti "food not delivered" fraud). The app uploads to Storage under the
+   * rider's own folder (enforced by storage RLS); we check the path belongs to this trip and exists.
+   */
+  private async validateProof(
+    riderId: string,
+    orderId: string,
+    proof: DeliveryProofInput | undefined,
+    required: boolean,
+  ) {
+    if (!proof) {
+      if (required)
+        throw AppError.unprocessable(
+          'PROOF_REQUIRED',
+          'Take a photo of the package at the door to continue',
+        );
+      return {};
+    }
+    const expectedPrefix = `${riderId}/${orderId}/`;
+    if (
+      !proof.path.startsWith(expectedPrefix) ||
+      !/^[\w-]+\.(jpe?g|png|webp)$/i.test(proof.path.slice(expectedPrefix.length))
+    ) {
+      throw AppError.badRequest('INVALID_PROOF', 'Delivery photo is not attached to this order');
+    }
+    if (!(await this.storage.exists('delivery-proofs', proof.path))) {
+      throw AppError.unprocessable(
+        'PROOF_NOT_UPLOADED',
+        'The delivery photo has not finished uploading, please retry',
+      );
+    }
+    return {
+      delivery_proof_path: proof.path,
+      delivery_proof_lat: proof.lat ?? null,
+      delivery_proof_lng: proof.lng ?? null,
+    };
   }
 
   async sos(riderId: string, input: SosDto) {
@@ -394,10 +463,7 @@ export class RidersService {
         lat: full.restaurant.lat,
         lng: full.restaurant.lng,
       },
-      customer: {
-        name: order.delivery_address.contactName,
-        phone: active ? order.delivery_address.contactPhone : null,
-      },
+      customer: { name: order.delivery_address.contactName },
       dropAddress: order.delivery_address,
       items: full.items.map((i) => ({
         name: i.name,
@@ -408,6 +474,7 @@ export class RidersService {
       collectPaise: order.payment_method === 'cod' ? order.total_paise : 0,
       payoutPaise: (offer?.payout_paise ?? 0) + order.tip_paise,
       customerNote: order.customer_note,
+      proofPhotoRequired: (await this.deliveryConfig()).proofPhotoRequired,
       readyAt: iso(order.ready_at),
       estimatedDeliveryAt: iso(order.estimated_delivery_at),
       createdAt: order.created_at.toISOString(),
