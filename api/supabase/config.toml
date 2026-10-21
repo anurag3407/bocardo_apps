@@ -1,0 +1,61 @@
+# Supabase CLI config for local development (`supabase start`).
+project_id = "bocardo"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["bocardo-customer://", "bocardo-restaurant://", "bocardo-rider://"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+template = "Your Bocardo code is {{ .Code }}"
+max_frequency = "30s"
+
+# Fixed OTPs for the seeded demo phones (local only — no SMS is sent).
+[auth.sms.test_otp]
+919999900001 = "123456"
+919999900002 = "123456"
+919999900003 = "123456"
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+# Puts app_roles / admin_role into every access token (see migration 0002).
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"

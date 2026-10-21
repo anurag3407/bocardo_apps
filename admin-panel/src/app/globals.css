@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+@import 'mapbox-gl/dist/mapbox-gl.css';
+@import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
+
+/* Bocardo console tokens — components use only these semantic colors. */
+:root {
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --border: #e6e6ea;
+  --text: #14151a;
+  --muted: #62656f;
+  --brand: #ff5a1f;
+  --brand-soft: #fff0ea;
+  --success: #1ba672;
+  --warning: #c98200;
+  --danger: #e23744;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e0f12;
+    --surface: #17181c;
+    --border: #2c2e35;
+    --text: #f4f4f6;
+    --muted: #a3a6b0;
+    --brand-soft: #3a1d12;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
