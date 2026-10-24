@@ -45,7 +45,9 @@ expo-env.d.ts
 .env.production
 .env.staging
 !.env.example
-firebase/
+customer-app/firebase/
+restaurant-app/firebase/
+rider-app/firebase/
 firebase-service-account*.json
 supabase/.branches
 supabase/.temp
