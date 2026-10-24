@@ -8,6 +8,8 @@ const optionalString = z
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    /** Allow in-memory / direct / log fallback providers even when NODE_ENV=production (useful for staging / Render test deploys). */
+    ALLOW_DEV_FALLBACKS: z.coerce.boolean().default(false),
     PORT: z.coerce.number().int().default(4000),
     API_PUBLIC_URL: z.string().url().default('http://localhost:4000'),
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
@@ -65,7 +67,7 @@ export const envSchema = z
     RAZORPAY_WEBHOOK_SECRET: optionalString,
   })
   .superRefine((env, ctx) => {
-    if (env.NODE_ENV !== 'production') return;
+    if (env.NODE_ENV !== 'production' || env.ALLOW_DEV_FALLBACKS) return;
     // In-memory/dev fallbacks are unsafe with more than one instance — require real providers.
     if (env.TELEPHONY_PROVIDER === 'direct') {
       ctx.addIssue({

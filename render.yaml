@@ -1,0 +1,80 @@
+services:
+  # ── 1. Bocardo Backend API ──────────────────────────────
+  - type: web
+    name: bocardo-api
+    runtime: node
+    plan: free
+    rootDir: api
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: node dist/main.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ALLOW_DEV_FALLBACKS
+        value: "true" # Allows skipping Exotel & DLT for staging/preview deployments
+      - key: PORT
+        value: 10000
+      - key: API_PUBLIC_URL
+        sync: false # e.g. https://bocardo-api.onrender.com
+      - key: CORS_ORIGINS
+        sync: false # e.g. https://bocardo-admin.onrender.com
+      - key: APP_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Supabase Transaction Pooler URL (port 6543)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: QSTASH_TOKEN
+        sync: false
+      - key: QSTASH_CURRENT_SIGNING_KEY
+        sync: false
+      - key: QSTASH_NEXT_SIGNING_KEY
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_BASE64
+        sync: false
+      - key: GEO_PROVIDER
+        value: mapbox
+      - key: MAPBOX_ACCESS_TOKEN
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: TELEPHONY_WEBHOOK_TOKEN
+        generateValue: true
+      - key: TELEPHONY_PROVIDER
+        value: direct # Use exotel or twilio in true production
+      - key: OTP_HUMAN_CHECK
+        value: optional # Change to 'required' once Firebase App Check is registered
+      - key: SMS_PROVIDER
+        value: log # Change to 'msg91' with DLT credentials for live SMS
+
+  # ── 2. Bocardo Admin Panel (Next.js Console) ─────────────
+  - type: web
+    name: bocardo-admin
+    runtime: node
+    plan: free
+    rootDir: admin-panel
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # URL of bocardo-api service
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_MAPBOX_TOKEN
+        sync: false
