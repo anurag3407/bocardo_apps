@@ -53,5 +53,13 @@
     "gen:api": "orval --config orval.config.ts",
     "doctor": "npx expo-doctor"
   },
-  "private": true
+  "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@firebase/util",
+      "esbuild",
+      "protobufjs",
+      "unrs-resolver"
+    ]
+  }
 }
