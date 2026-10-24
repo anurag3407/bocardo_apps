@@ -65,5 +65,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     '@rnmapbox/maps',
   ],
   experiments: { typedRoutes: false, reactCompiler: true },
-  extra: { eas: { projectId: process.env.EAS_PROJECT_ID } },
+  extra: { eas: { projectId: '1dae70fe-ded8-48a4-9f33-b642b4a19d2d' } },
 });
