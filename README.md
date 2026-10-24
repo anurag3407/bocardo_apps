@@ -38,6 +38,16 @@ cd ../customer-app && cp .env.example .env && pnpm install
 pnpm ios   # or: pnpm android  — builds the dev client once, then `pnpm start`
 ```
 
+Expo Go and the browser can't run these apps (Firebase, Mapbox and Razorpay are native modules). Opening
+`localhost:8081` in Chrome only shows Metro's JSON manifest. Without Android Studio, build the dev client
+in the cloud instead: `eas build -p android --profile development`, install the APK, then
+`pnpm start --lan` (or `--tunnel` on another network) and open the project from the dev client.
+
+Release builds: `eas build -p android --profile preview` gives an installable APK and `--profile production`
+gives a Play Store AAB. Their `EXPO_PUBLIC_*` values come from **EAS environment variables**
+(`eas env:list preview`), not `.env`, because `.env` is git-ignored and never uploaded. `app.config.ts`
+fails the build if any of them is missing or not https.
+
 Without Upstash, QStash, Firebase, Mapbox or Razorpay credentials the API falls back to in-memory /
 logging / straight-line / mock adapters, so the whole order flow works offline. Production config
 validation refuses to start with those fallbacks.
