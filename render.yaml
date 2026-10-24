@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     rootDir: api
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    buildCommand: npx pnpm install --frozen-lockfile && npx pnpm build
     startCommand: node dist/main.js
     healthCheckPath: /health
     autoDeploy: true
@@ -65,7 +65,7 @@ services:
     runtime: node
     plan: free
     rootDir: admin-panel
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    buildCommand: npx pnpm install --frozen-lockfile && npx pnpm build
     startCommand: pnpm start
     healthCheckPath: /login
     autoDeploy: true
