@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "561573052662",
+    "project_id": "bocardo-2ac62",
+    "storage_bucket": "bocardo-2ac62.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:561573052662:android:17d1270b3c2d7afcb42cd7",
+        "android_client_info": {
+          "package_name": "app.bocardo.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACLrNjeeJ5gMIxu0gDaqP8dC03CxRv2A4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
