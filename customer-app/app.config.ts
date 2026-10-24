@@ -34,7 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // keeps the Supabase session (SQLite) out of adb / cloud backups
     allowBackup: false,
     adaptiveIcon: {
-      backgroundColor: '#FF5A1F',
+      backgroundColor: '#6CDCF9',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -50,11 +50,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
-    ['expo-splash-screen', { backgroundColor: '#FF5A1F', image: './assets/images/splash-icon.png', imageWidth: 76 }],
+    ['expo-splash-screen', { backgroundColor: '#6CDCF9', image: './assets/images/splash-icon.png', imageWidth: 180 }],
     'expo-sqlite',
     ['expo-location', { locationWhenInUsePermission: 'Bocardo uses your location to show restaurants that deliver to you.' }],
     // without a monochrome small icon Android renders the launcher icon as a white square
-    ['expo-notifications', { color: '#FF5A1F', icon: './assets/images/android-icon-monochrome.png' }],
+    ['expo-notifications', { color: '#0596D1', icon: './assets/images/android-icon-monochrome.png' }],
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
     '@react-native-firebase/app-check',

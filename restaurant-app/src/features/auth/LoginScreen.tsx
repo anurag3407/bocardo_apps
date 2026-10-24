@@ -1,10 +1,13 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizePhone, sendOtp } from '@/core/auth/auth-actions';
-import { Button, Input, Screen, spacing, Text } from '@/ui';
+import { Button, Input, Logo, radius, Row, spacing, Text, useTheme } from '@/ui';
 
-export function LoginScreen({ title = 'Bocardo', subtitle = 'Food you love, delivered fast' }: { title?: string; subtitle?: string }) {
+/** Sky hero with the brand mark, white sheet with the phone field (Zomato-style entry). */
+export function LoginScreen({ headline = 'Food you love,\ndelivered fast', tag }: { headline?: string; tag?: string }) {
+  const t = useTheme();
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,27 +28,56 @@ export function LoginScreen({ title = 'Bocardo', subtitle = 'Food you love, deli
   };
 
   return (
-    <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'center', gap: spacing.xl }}>
-        <View style={{ gap: spacing.sm }}>
-          <Text variant="title">{title}</Text>
-          <Text muted>{subtitle}</Text>
-        </View>
-        <Input
-          label="Mobile number"
-          placeholder="98765 43210"
-          keyboardType="phone-pad"
-          autoComplete="tel"
-          textContentType="telephoneNumber"
-          maxLength={14}
-          value={phone}
-          onChangeText={setPhone}
-          error={error}
-          onSubmitEditing={submit}
-        />
-        <Button title="Send OTP" size="lg" loading={loading} onPress={submit} />
-        <Text variant="caption" muted center>{"By continuing you agree to Bocardo's Terms and Privacy Policy."}</Text>
+    <View style={{ flex: 1, backgroundColor: t.sky }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
+          <SafeAreaView edges={['top']} style={styles.hero}>
+            <Logo size={56} wordmark tag={tag} />
+            <View style={{ gap: spacing.md }}>
+              <Text variant="display" color={t.ink} style={{ fontSize: 36, lineHeight: 42 }}>{headline}</Text>
+              <Row gap={spacing.sm}>
+                <View style={[styles.dot, { backgroundColor: t.lime }]} />
+                <View style={[styles.dot, { backgroundColor: t.sun }]} />
+                <View style={[styles.dot, { backgroundColor: t.ink }]} />
+              </Row>
+            </View>
+          </SafeAreaView>
+
+          <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: t.background }]}>
+            <View style={styles.divider}>
+              <View style={[styles.rule, { backgroundColor: t.border }]} />
+              <Text variant="label" muted>Log in or sign up</Text>
+              <View style={[styles.rule, { backgroundColor: t.border }]} />
+            </View>
+            <Input
+              prefix="+91"
+              placeholder="Enter mobile number"
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              textContentType="telephoneNumber"
+              maxLength={14}
+              value={phone}
+              onChangeText={(v) => {
+                setPhone(v);
+                if (error) setError(null);
+              }}
+              error={error}
+              onSubmitEditing={submit}
+              style={{ fontSize: 17, fontWeight: '600', letterSpacing: 0.5 }}
+            />
+            <Button title="Continue" size="lg" loading={loading} disabled={phone.replace(/\D/g, '').length < 10} onPress={submit} />
+            <Text variant="caption" subtle center>{"By continuing, you agree to Bocardo's Terms of Service and Privacy Policy."}</Text>
+          </SafeAreaView>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </Screen>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  hero: { flex: 1, minHeight: 300, justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xxl },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  sheet: { borderTopLeftRadius: radius.xl + 4, borderTopRightRadius: radius.xl + 4, padding: spacing.xl, gap: spacing.lg },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xs },
+  rule: { flex: 1, height: StyleSheet.hairlineWidth },
+});

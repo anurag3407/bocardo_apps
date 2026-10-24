@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/metro-runtime": "~58.0.15",
+    "@expo/vector-icons": "^15.1.1",
     "@react-native-firebase/app": "^27.0.0",
     "@react-native-firebase/app-check": "^27.0.0",
     "@react-native-firebase/messaging": "^27.0.0",

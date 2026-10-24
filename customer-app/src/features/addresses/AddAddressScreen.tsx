@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { addressesCreate, getAddressesListQueryKey } from '@/core/api/generated/addresses/addresses';
 import type { CreateAddressDtoLabel } from '@/core/api/generated/model';
@@ -9,9 +9,11 @@ import { currentLocation } from '@/core/location/current-location';
 import { DeliveryMap } from '@/core/maps/delivery-map';
 import { reverseGeocode } from '@/core/maps/geocoding';
 import { useDeliveryLocation } from '@/features/location/delivery-location-store';
-import { Button, Input, radius, Row, Screen, spacing, Text, useTheme } from '@/ui';
+import { Button, Chip, Icon, Input, radius, Row, Screen, spacing, Text, useTheme, type IconName } from '@/ui';
 
 const LABELS: CreateAddressDtoLabel[] = ['home', 'work', 'other'];
+const LABEL_ICONS: Record<CreateAddressDtoLabel, IconName> = { home: 'home', work: 'briefcase', other: 'location' };
+const MAP_HEIGHT = 280;
 
 /** Pin-on-map address entry: the pin (not the typed text) is what riders navigate to. */
 export function AddAddressScreen() {
@@ -67,32 +69,52 @@ export function AddAddressScreen() {
   const field = (key: keyof typeof form) => ({ value: form[key], onChangeText: (v: string) => setForm((f) => ({ ...f, [key]: v })) });
 
   return (
-    <Screen scroll edges={['bottom']} footer={<Button title="Save address" size="lg" loading={saving} disabled={!pin} onPress={save} />}>
+    <Screen scroll edges={['bottom']} footer={<Button title="Save address" icon="checkmark" size="lg" loading={saving} disabled={!pin} onPress={save} />}>
       {pin ? (
-        <View>
-          <DeliveryMap center={pin} zoom={16} markers={[]} height={260} onCenterChanged={setPin} showUserLocation />
-          {/* fixed pin in the center; the map moves underneath it */}
-          <View pointerEvents="none" style={{ position: 'absolute', top: 260 / 2 - 28, left: 0, right: 0, alignItems: 'center' }}>
-            <Text style={{ fontSize: 28 }}>📍</Text>
+        <View style={{ gap: spacing.sm }}>
+          <View style={styles.map}>
+            <DeliveryMap center={pin} zoom={16} markers={[]} height={MAP_HEIGHT} onCenterChanged={setPin} showUserLocation />
+            {/* fixed pin in the center; the map moves underneath it */}
+            <View pointerEvents="none" style={styles.pinWrap}>
+              <View style={[styles.tooltip, { backgroundColor: t.ink }]}>
+                <Text variant="caption" color={t.textInverse} style={{ fontWeight: '700' }}>Order will be delivered here</Text>
+              </View>
+              <Icon name="location" size={40} color={t.brand} />
+            </View>
           </View>
-          <Text variant="caption" muted center>Move the map to place the pin at your door</Text>
+          <Row gap={spacing.xs} justify="center">
+            <Icon name="hand-left-outline" size={14} color={t.textMuted} />
+            <Text variant="caption" muted>Move the map to place the pin at your door</Text>
+          </Row>
         </View>
       ) : null}
-      <Input label="Flat / house no., building *" {...field('line1')} />
-      <Input label="Area / street" {...field('line2')} />
-      <Input label="Landmark" {...field('landmark')} />
-      <Row>
+      <Input label="Flat / house no., building *" icon="business-outline" {...field('line1')} />
+      <Input label="Area / street" icon="map-outline" {...field('line2')} />
+      <Input label="Landmark" icon="flag-outline" placeholder="e.g. Near City Mall" {...field('landmark')} />
+      <Row style={{ alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}><Input label="City" {...field('city')} /></View>
         <View style={{ flex: 1 }}><Input label="Pincode" keyboardType="number-pad" maxLength={6} {...field('pincode')} /></View>
       </Row>
-      <Row>
-        {LABELS.map((l) => (
-          <Pressable key={l} onPress={() => setForm((f) => ({ ...f, label: l }))} style={{ borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderColor: form.label === l ? t.brand : t.border }}>
-            <Text variant="label" color={form.label === l ? t.brand : t.text}>{l[0].toUpperCase() + l.slice(1)}</Text>
-          </Pressable>
-        ))}
-      </Row>
-      {error ? <Text color={t.danger}>{error}</Text> : null}
+      <View style={{ gap: spacing.sm }}>
+        <Text variant="label" muted>Save as</Text>
+        <Row>
+          {LABELS.map((l) => (
+            <Chip key={l} label={l[0].toUpperCase() + l.slice(1)} icon={LABEL_ICONS[l]} active={form.label === l} onPress={() => setForm((f) => ({ ...f, label: l }))} />
+          ))}
+        </Row>
+      </View>
+      {error ? (
+        <Row gap={spacing.sm}>
+          <Icon name="alert-circle" size={16} color={t.danger} />
+          <Text color={t.danger} style={{ flex: 1 }}>{error}</Text>
+        </Row>
+      ) : null}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  map: { borderRadius: radius.lg, overflow: 'hidden' },
+  pinWrap: { position: 'absolute', top: MAP_HEIGHT / 2 - 74, left: 0, right: 0, alignItems: 'center', gap: 2 },
+  tooltip: { borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: 6 },
+});

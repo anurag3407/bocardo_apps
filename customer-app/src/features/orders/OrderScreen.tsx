@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Image } from 'expo-image';
-import { Alert, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { getOrdersDetailQueryKey, ordersCancel, ordersPaymentSession, useOrdersDetail } from '@/core/api/generated/orders/orders';
 import { paymentsVerify } from '@/core/api/generated/payments/payments';
@@ -13,7 +13,7 @@ import { startCall } from '@/core/calls/start-call';
 import { useRealtime } from '@/core/realtime/use-realtime';
 import * as Crypto from 'expo-crypto';
 import { formatPaise, formatTime, minutesUntil } from '@/lib/format';
-import { Badge, Button, Card, Divider, ErrorState, Loading, Row, Screen, spacing, Text, useTheme, VegMark } from '@/ui';
+import { Badge, Button, Card, Divider, ErrorState, Icon, IconBadge, IconButton, ListItem, Loading, radius, RatingBadge, Row, Screen, spacing, Text, useTheme, VegMark, type IconName } from '@/ui';
 import { RateOrder } from './RateOrder';
 import { ACTIVE_STATUSES, statusHeadline } from './status-copy';
 
@@ -84,78 +84,166 @@ export function OrderScreen() {
       { text: 'Keep order', style: 'cancel' as const },
     ]);
 
+  const failed = ['CANCELLED', 'REJECTED', 'UNDELIVERED', 'PAYMENT_FAILED'].includes(o.status);
+  const heroBg = failed ? t.dangerSoft : o.status === 'DELIVERED' ? t.limeSoft : t.sky;
+  const heroIcon: IconName = failed ? 'close-circle' : o.status === 'DELIVERED' ? 'checkmark-circle' : o.status === 'PICKED_UP' ? 'bicycle' : o.status === 'PAYMENT_PENDING' ? 'card' : 'restaurant';
+
   return (
-    <Screen scroll edges={['bottom']} refreshing={order.isRefetching} onRefresh={() => order.refetch()}>
+    <Screen scroll tone="surface" edges={['bottom']} refreshing={order.isRefetching} onRefresh={() => order.refetch()} contentStyle={{ gap: spacing.md }}>
       <Stack.Screen options={{ title: `Order #${o.shortCode}` }} />
-      <View style={{ gap: spacing.xs }}>
-        <Text variant="title">{headline.title}</Text>
-        <Text muted>{headline.subtitle}</Text>
-        {active && eta !== null && o.status !== 'PAYMENT_PENDING' ? <Text variant="heading" color={t.brand}>Arriving in ~{eta} min</Text> : null}
+      <View style={[styles.hero, { backgroundColor: heroBg }]}>
+        <Row gap={spacing.md} style={{ alignItems: 'flex-start' }}>
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            <Text variant="title" color={t.ink}>{headline.title}</Text>
+            <Text color={t.ink} style={{ opacity: 0.75 }}>{headline.subtitle}</Text>
+          </View>
+          <IconBadge name={heroIcon} size={48} background={t.surfaceRaised} color={failed ? t.danger : t.ink} />
+        </Row>
+        {active && eta !== null && o.status !== 'PAYMENT_PENDING' ? (
+          <View style={[styles.eta, { backgroundColor: t.surfaceRaised }]}>
+            <Icon name="time" size={18} color={t.success} />
+            <Text variant="subheading">Arriving in <Text variant="subheading" style={{ fontWeight: '800' }}>{eta} min</Text></Text>
+          </View>
+        ) : null}
       </View>
 
-      {active ? <DeliveryMap markers={markers} fitToMarkers height={240} /> : null}
+      {active ? (
+        <View style={styles.map}>
+          <DeliveryMap markers={markers} fitToMarkers height={240} />
+        </View>
+      ) : null}
 
-      {o.status === 'PAYMENT_PENDING' ? <Button title={`Complete payment · ${formatPaise(o.pricing.totalPaise)}`} loading={busy} onPress={pay} /> : null}
+      {o.status === 'PAYMENT_PENDING' ? <Button size="lg" title="Complete payment" trailing={formatPaise(o.pricing.totalPaise)} loading={busy} onPress={pay} /> : null}
 
       {o.deliveryOtp ? (
-        <Card style={{ backgroundColor: t.brandSoft }}>
-          <Row justify="space-between">
-            <Text variant="label">Delivery OTP — share only at hand-off</Text>
-            <Text variant="title" style={{ letterSpacing: 6 }}>{o.deliveryOtp}</Text>
+        <Card style={{ backgroundColor: t.sunSoft }}>
+          <Row justify="space-between" gap={spacing.md}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Row gap={6}>
+                <Icon name="key" size={16} color={t.ink} />
+                <Text variant="subheading" color={t.ink}>Delivery OTP</Text>
+              </Row>
+              <Text variant="caption" muted>Share only when you receive your order</Text>
+            </View>
+            <View style={styles.otp}>
+              {o.deliveryOtp.split('').map((d, i) => (
+                <View key={i} style={[styles.otpDigit, { backgroundColor: t.surfaceRaised }]}>
+                  <Text variant="title" style={{ fontSize: 20 }}>{d}</Text>
+                </View>
+              ))}
+            </View>
           </Row>
         </Card>
       ) : null}
 
       {o.rider ? (
         <Card>
-          <Row justify="space-between">
-            <View style={{ gap: 2 }}>
-              <Text variant="heading">🛵 {o.rider.name ?? 'Delivery partner'}</Text>
-              <Text variant="caption" muted>{o.rider.vehicleNumber} · ★ {o.rider.ratingAvg.toFixed(1)}</Text>
+          <Row gap={spacing.md}>
+            <IconBadge name="bicycle" size={48} background={t.limeSoft} color={t.ink} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text variant="heading">{o.rider.name ?? 'Delivery partner'}</Text>
+              <Row gap={6}>
+                <RatingBadge value={o.rider.ratingAvg} size="sm" />
+                {o.rider.vehicleNumber ? <Text variant="caption" muted>{o.rider.vehicleNumber}</Text> : null}
+              </Row>
             </View>
-            {active ? <Button title="Call" kind="secondary" onPress={() => void startCall(id, 'rider')} /> : null}
+            {active ? <IconButton name="call" label="Call delivery partner" onPress={() => void startCall(id, 'rider')} background={t.successSoft} color={t.success} size={44} /> : null}
           </Row>
         </Card>
       ) : null}
 
       {o.deliveryProofUrl ? (
         <Card style={{ gap: spacing.sm }}>
-          <Text variant="label">{o.status === 'DELIVERED' ? 'Delivered here' : 'Delivery partner reached your door'}</Text>
-          <Image source={o.deliveryProofUrl} style={{ width: '100%', height: 220, borderRadius: 12 }} contentFit="cover" accessibilityLabel="Photo of the delivered package" />
+          <Row gap={spacing.sm}>
+            <Icon name="camera" size={18} color={t.brandText} />
+            <Text variant="heading">{o.status === 'DELIVERED' ? 'Delivered here' : 'Delivery partner reached your door'}</Text>
+          </Row>
+          <Image source={o.deliveryProofUrl} style={{ width: '100%', height: 220, borderRadius: radius.md }} contentFit="cover" accessibilityLabel="Photo of the delivered package" />
         </Card>
       ) : null}
 
       {o.canRate ? <RateOrder orderId={id} hasRider={!!o.rider} onDone={refresh} /> : null}
 
-      <Card style={{ gap: spacing.sm }}>
-        <Text variant="heading">{o.restaurant.name}</Text>
+      <Card style={{ gap: spacing.md }}>
+        <Row gap={spacing.md}>
+          <IconBadge name="restaurant" size={40} shape="square" />
+          <View style={{ flex: 1 }}>
+            <Text variant="heading">{o.restaurant.name}</Text>
+            <Text variant="caption" muted>Order #{o.shortCode}</Text>
+          </View>
+        </Row>
+        <Divider />
         {o.items.map((i, idx) => (
-          <Row key={idx} justify="space-between">
-            <Row><VegMark veg={i.isVeg} /><Text>{i.quantity} × {i.name}{i.variantName ? ` (${i.variantName})` : ''}</Text></Row>
+          <Row key={idx} justify="space-between" gap={spacing.md}>
+            <Row gap={spacing.sm} style={{ flex: 1 }}>
+              <VegMark veg={i.isVeg} />
+              <Text style={{ flex: 1 }}>
+                <Text variant="subheading" color={t.brandText}>{i.quantity} × </Text>
+                {i.name}{i.variantName ? ` (${i.variantName})` : ''}
+              </Text>
+            </Row>
             <Text>{formatPaise(i.lineTotalPaise)}</Text>
           </Row>
         ))}
-        <Divider />
+        <View style={[styles.dashed, { borderColor: t.border }]} />
         <Row justify="space-between">
-          <Text variant="label">Total {o.paymentMethod === 'cod' ? '(cash on delivery)' : '(paid online)'}</Text>
-          <Text variant="label">{formatPaise(o.pricing.totalPaise)}</Text>
+          <View>
+            <Text variant="heading">Total</Text>
+            <Text variant="caption" muted>{o.paymentMethod === 'cod' ? 'Cash on delivery' : 'Paid online'}</Text>
+          </View>
+          <Text variant="heading">{formatPaise(o.pricing.totalPaise)}</Text>
         </Row>
-        {o.paymentStatus === 'refunded' || o.paymentStatus === 'partially_refunded' ? <Badge label={o.paymentStatus.replace('_', ' ')} tone="success" /> : null}
+        {o.paymentStatus === 'refunded' || o.paymentStatus === 'partially_refunded' ? <Badge label={o.paymentStatus.replace('_', ' ')} tone="success" icon="return-down-back" /> : null}
       </Card>
 
-      <Card style={{ gap: spacing.xs }}>
-        <Text variant="label">Timeline</Text>
-        {o.timeline.map((e, i) => (
-          <Row key={i} justify="space-between">
-            <Text muted>{e.event.replace('STATUS_', '').replace('DISPATCH_', 'Rider ').replace('_', ' ').toLowerCase()}</Text>
-            <Text variant="caption" muted>{formatTime(e.at)}</Text>
+      <Card style={{ gap: 0 }}>
+        <Text variant="heading" style={{ marginBottom: spacing.md }}>Order timeline</Text>
+        {o.timeline.map((e, i) => {
+          const last = i === o.timeline.length - 1;
+          return (
+            <View key={i} style={styles.step}>
+              <View style={{ alignItems: 'center', width: 16 }}>
+                <View style={[styles.stepDot, { backgroundColor: last ? t.brand : t.success, borderColor: last ? t.brandSoft : t.successSoft }]} />
+                {!last ? <View style={[styles.stepLine, { backgroundColor: t.border }]} /> : null}
+              </View>
+              <Row justify="space-between" style={{ flex: 1, alignItems: 'flex-start', paddingBottom: last ? 0 : spacing.lg }}>
+                <Text variant={last ? 'subheading' : 'body'} muted={!last} style={{ textTransform: 'capitalize', flex: 1 }}>
+                  {e.event.replace('STATUS_', '').replace('DISPATCH_', 'Rider ').replace('_', ' ').toLowerCase()}
+                </Text>
+                <Text variant="caption" subtle>{formatTime(e.at)}</Text>
+              </Row>
+            </View>
+          );
+        })}
+        {o.cancelReason ? (
+          <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
+            <Icon name="information-circle" size={16} color={t.danger} />
+            <Text variant="caption" color={t.danger} style={{ flex: 1 }}>{o.cancelReason}</Text>
           </Row>
-        ))}
-        {o.cancelReason ? <Text variant="caption" color={t.danger}>{o.cancelReason}</Text> : null}
+        ) : null}
       </Card>
 
-      {o.canCancel ? <Button title="Cancel order" kind="ghost" onPress={cancel} /> : null}
-      <Button title="Need help with this order?" kind="ghost" onPress={() => router.push({ pathname: '/support/new', params: { orderId: id } })} />
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        <ListItem icon="chatbubble-ellipses" title="Need help with this order?" subtitle="Chat with our support team" onPress={() => router.push({ pathname: '/support/new', params: { orderId: id } })} />
+        {o.canCancel ? (
+          <>
+            <Divider inset={48} />
+            <ListItem icon="close-circle" title="Cancel order" destructive onPress={cancel} />
+          </>
+        ) : null}
+      </Card>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  hero: { borderRadius: radius.lg, padding: spacing.lg, gap: spacing.lg },
+  eta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  map: { borderRadius: radius.lg, overflow: 'hidden' },
+  otp: { flexDirection: 'row', gap: 6 },
+  otpDigit: { width: 34, height: 42, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  dashed: { borderTopWidth: 1, borderStyle: 'dashed' },
+  step: { flexDirection: 'row', gap: spacing.md },
+  stepDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 3, marginTop: 3 },
+  stepLine: { width: 2, flex: 1, marginVertical: 2 },
+});

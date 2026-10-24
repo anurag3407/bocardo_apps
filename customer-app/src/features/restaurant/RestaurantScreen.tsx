@@ -1,13 +1,13 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, SectionList, Switch, View } from 'react-native';
+import { Alert, ScrollView, SectionList, StyleSheet, View } from 'react-native';
 import { useCatalogDetail } from '@/core/api/generated/catalog/catalog';
 import type { MenuItem } from '@/core/api/generated/model';
 import { CartBar } from '@/features/cart/CartBar';
 import { quantityOf, useCart } from '@/features/cart/cart-store';
 import { useDeliveryLocation } from '@/features/location/delivery-location-store';
 import { formatDistance, formatPaise } from '@/lib/format';
-import { Badge, Card, ErrorState, Loading, Row, spacing, Text, useTheme } from '@/ui';
+import { Badge, Card, Chip, ErrorState, Icon, Loading, RatingBadge, Row, spacing, Text, useTheme, type IconName } from '@/ui';
 import { ItemOptionsSheet, type ChosenOptions } from './ItemOptionsSheet';
 import { MenuItemRow } from './MenuItemRow';
 
@@ -25,6 +25,7 @@ export function RestaurantScreen() {
   const detail = useCatalogDetail(id, location ? { lat: location.lat, lng: location.lng } : {});
   const cart = useCart();
   const [vegOnly, setVegOnly] = useState(false);
+  const [bestsellers, setBestsellers] = useState(false);
   const [customising, setCustomising] = useState<MenuItem | null>(null);
 
   if (detail.isLoading) return <Loading />;
@@ -54,46 +55,76 @@ export function RestaurantScreen() {
   };
 
   const sections = r.menu
-    .map((c) => ({ title: c.name, data: c.items.filter((i) => !vegOnly || i.isVeg) }))
+    .map((c) => ({ title: c.name, data: c.items.filter((i) => (!vegOnly || i.isVeg) && (!bestsellers || i.isBestseller)) }))
     .filter((s) => s.data.length);
+
+  const notice = !r.isOpen && r.closedReason ? CLOSED_COPY[r.closedReason] : r.deliversToLocation === false ? "This restaurant doesn't deliver to your selected location." : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
-      <Stack.Screen options={{ title: r.name }} />
+      <Stack.Screen options={{ title: '' }} />
       <SectionList
         sections={sections}
         keyExtractor={(i) => i.id}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 140 }}
         ListHeaderComponent={
-          <View style={{ gap: spacing.md, marginBottom: spacing.md }}>
-            <Card style={{ gap: spacing.xs }}>
-              <Row justify="space-between">
-                <Text variant="title" style={{ flex: 1 }}>{r.name}</Text>
-                {r.ratingCount > 0 ? <Badge label={`★ ${r.ratingAvg.toFixed(1)} (${r.ratingCount})`} tone="success" /> : null}
-              </Row>
-              <Text muted>{r.cuisines.join(' · ')}</Text>
-              <Text variant="caption" muted>{r.addressLine}</Text>
-              <Row gap={spacing.md}>
-                {r.etaMinutes ? <Text variant="label">⏱ {r.etaMinutes} min</Text> : null}
-                {r.distanceM !== null && r.distanceM !== undefined ? <Text variant="label">{formatDistance(r.distanceM)}</Text> : null}
-                {r.minOrderPaise > 0 ? <Text variant="caption" muted>Min order {formatPaise(r.minOrderPaise)}</Text> : null}
-              </Row>
+          <View style={{ gap: spacing.lg, paddingTop: spacing.xs }}>
+            <Card style={{ gap: spacing.md }}>
+              <View style={{ gap: spacing.xs }}>
+                <Row justify="space-between" gap={spacing.md}>
+                  <Text variant="title" style={{ flex: 1 }}>{r.name}</Text>
+                  {r.ratingCount > 0 ? (
+                    <View style={{ alignItems: 'center', gap: 2 }}>
+                      <RatingBadge value={r.ratingAvg} />
+                      <Text variant="caption" subtle style={{ fontSize: 10 }}>{r.ratingCount} ratings</Text>
+                    </View>
+                  ) : (
+                    <Badge label="New" tone="brand" />
+                  )}
+                </Row>
+                <Text muted>{r.cuisines.join(' · ')}</Text>
+              </View>
+              <View style={[styles.dashed, { borderColor: t.border }]} />
+              <View style={{ gap: spacing.sm }}>
+                {r.etaMinutes ? <Fact icon="time" color={t.success} text={`${r.etaMinutes} min delivery`} /> : null}
+                <Fact icon="location" color={t.brandText} text={[r.distanceM !== null && r.distanceM !== undefined ? formatDistance(r.distanceM) : null, r.addressLine].filter(Boolean).join(' · ')} />
+                {r.minOrderPaise > 0 ? <Fact icon="bag-handle" color={t.textMuted} text={`Minimum order ${formatPaise(r.minOrderPaise)}`} /> : null}
+                {r.isVegOnly ? <Fact icon="leaf" color={t.veg} text="Pure vegetarian kitchen" /> : null}
+              </View>
             </Card>
-            {!r.isOpen && r.closedReason ? <Card style={{ backgroundColor: t.brandSoft }}><Text color={t.danger}>{CLOSED_COPY[r.closedReason]}</Text></Card> : null}
-            {r.deliversToLocation === false ? <Card style={{ backgroundColor: t.brandSoft }}><Text color={t.danger}>{"This restaurant doesn't deliver to your selected location."}</Text></Card> : null}
-            {!r.isVegOnly ? (
-              <Row>
-                <Switch value={vegOnly} onValueChange={setVegOnly} trackColor={{ true: t.veg }} />
-                <Text variant="label">Veg only</Text>
-              </Row>
+
+            {notice ? (
+              <View style={[styles.notice, { backgroundColor: t.dangerSoft }]}>
+                <Icon name="alert-circle" size={20} color={t.danger} />
+                <Text color={t.danger} style={{ flex: 1 }}>{notice}</Text>
+              </View>
             ) : null}
+
+            <View style={{ alignItems: 'center', gap: spacing.md }}>
+              <Row gap={spacing.sm}>
+                <Icon name="restaurant-outline" size={14} color={t.textSubtle} />
+                <Text variant="overline" subtle>Menu</Text>
+                <Icon name="restaurant-outline" size={14} color={t.textSubtle} />
+              </Row>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+              {!r.isVegOnly ? <Chip label="Veg only" icon="leaf" active={vegOnly} onPress={() => setVegOnly((v) => !v)} /> : null}
+              <Chip label="Bestseller" icon="star" active={bestsellers} onPress={() => setBestsellers((v) => !v)} />
+            </ScrollView>
           </View>
         }
-        renderSectionHeader={({ section }) => <Text variant="heading" style={{ marginTop: spacing.xl }}>{section.title} ({section.data.length})</Text>}
+        renderSectionHeader={({ section }) => (
+          <View style={[styles.sectionHeader, { borderTopColor: t.surface }]}>
+            <Text variant="heading" style={{ fontSize: 18 }}>{section.title}</Text>
+            <Text variant="label" subtle>{section.data.length}</Text>
+          </View>
+        )}
         renderItem={({ item }) => (
           <MenuItemRow item={item} quantity={cart.restaurantId === r.id ? quantityOf(cart.lines, item.id) : 0} disabled={!orderable} onAdd={() => onAdd(item)} onRemove={() => onRemove(item)} />
         )}
+        ListEmptyComponent={<Text muted center style={{ padding: spacing.xxl }}>No dishes match these filters.</Text>}
       />
       <ItemOptionsSheet
         key={customising?.id}
@@ -109,3 +140,17 @@ export function RestaurantScreen() {
   );
 }
 
+function Fact({ icon, color, text }: { icon: IconName; color: string; text: string }) {
+  return (
+    <Row gap={spacing.sm}>
+      <Icon name={icon} size={16} color={color} />
+      <Text variant="label" style={{ flex: 1 }} numberOfLines={1}>{text}</Text>
+    </Row>
+  );
+}
+
+const styles = StyleSheet.create({
+  dashed: { borderTopWidth: 1, borderStyle: 'dashed' },
+  notice: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, borderRadius: 14 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, paddingTop: spacing.xl, marginTop: spacing.sm, borderTopWidth: 8, marginHorizontal: -spacing.lg, paddingHorizontal: spacing.lg },
+});

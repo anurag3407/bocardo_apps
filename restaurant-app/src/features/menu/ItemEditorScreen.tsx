@@ -1,15 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, Switch } from 'react-native';
+import { Alert } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { getPartnerMenuQueryKey, partnerCreateItem, partnerUpdateItem, usePartnerMenu } from '@/core/api/generated/partner/partner';
 import { useCurrentRestaurant } from '@/features/outlet/selected-restaurant';
-import { Button, Input, radius, Row, Screen, spacing, Text, useTheme } from '@/ui';
+import { Button, Card, Chip, Divider, Input, ListItem, Row, Screen, Segmented, spacing, Text, Toggle, type IconName } from '@/ui';
 
 /** Create or edit a dish. Variants/add-ons are managed via the API's options endpoint (admin tooling). */
 export function ItemEditorScreen() {
-  const t = useTheme();
   const qc = useQueryClient();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { current } = useCurrentRestaurant();
@@ -48,30 +47,41 @@ export function ItemEditorScreen() {
     }
   };
 
-  const toggle = (key: 'isVeg' | 'isBestseller' | 'isActive', label: string) => (
-    <Row justify="space-between">
-      <Text>{label}</Text>
-      <Switch value={form[key]} onValueChange={(v) => setForm((f) => ({ ...f, [key]: v }))} />
-    </Row>
+  const toggle = (key: 'isBestseller' | 'isActive', icon: IconName, label: string, subtitle: string) => (
+    <ListItem icon={icon} title={label} subtitle={subtitle} chevron={false} right={<Toggle value={form[key]} onValueChange={(v) => setForm((f) => ({ ...f, [key]: v }))} />} />
   );
 
   return (
-    <Screen scroll edges={['bottom']} footer={<Button title="Save" size="lg" loading={saving} onPress={save} />}>
+    <Screen scroll tone="surface" edges={['bottom']} footer={<Button title={existing ? 'Save changes' : 'Create item'} icon="checkmark" size="lg" loading={saving} onPress={save} />}>
       <Stack.Screen options={{ title: existing ? 'Edit item' : 'New item' }} />
-      <Input label="Name" value={form.name} onChangeText={(v) => setForm((f) => ({ ...f, name: v }))} />
-      <Input label="Description" value={form.description} onChangeText={(v) => setForm((f) => ({ ...f, description: v }))} multiline />
-      <Input label="Price (₹)" keyboardType="decimal-pad" value={form.price} onChangeText={(v) => setForm((f) => ({ ...f, price: v }))} />
-      <Text variant="label">Category</Text>
-      <Row gap={spacing.sm}>
-        {menu.data?.categories.map((c) => (
-          <Pressable key={c.id} onPress={() => setForm((f) => ({ ...f, categoryId: c.id }))} style={{ borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderColor: form.categoryId === c.id ? t.brand : t.border }}>
-            <Text variant="caption">{c.name}</Text>
-          </Pressable>
-        ))}
-      </Row>
-      {toggle('isVeg', 'Vegetarian')}
-      {toggle('isBestseller', 'Bestseller')}
-      {existing ? toggle('isActive', 'Visible on menu') : null}
+      <Card style={{ gap: spacing.lg }}>
+        <Input label="Name" placeholder="e.g. Paneer Butter Masala" value={form.name} onChangeText={(v) => setForm((f) => ({ ...f, name: v }))} />
+        <Input label="Description" placeholder="What makes it special?" value={form.description} onChangeText={(v) => setForm((f) => ({ ...f, description: v }))} multiline />
+        <Input label="Price" prefix="₹" keyboardType="decimal-pad" placeholder="0" value={form.price} onChangeText={(v) => setForm((f) => ({ ...f, price: v }))} />
+      </Card>
+      <Card style={{ gap: spacing.md }}>
+        <Text variant="heading">Food type</Text>
+        <Segmented
+          value={form.isVeg ? 'veg' : 'nonveg'}
+          onChange={(k) => setForm((f) => ({ ...f, isVeg: k === 'veg' }))}
+          options={[{ key: 'veg', label: 'Vegetarian' }, { key: 'nonveg', label: 'Non-veg' }]}
+        />
+        <Text variant="heading" style={{ marginTop: spacing.sm }}>Category</Text>
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+          {menu.data?.categories.map((c) => (
+            <Chip key={c.id} label={c.name} icon={form.categoryId === c.id ? 'checkmark' : undefined} active={form.categoryId === c.id} onPress={() => setForm((f) => ({ ...f, categoryId: c.id }))} />
+          ))}
+        </Row>
+      </Card>
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        {toggle('isBestseller', 'star-outline', 'Bestseller', 'Highlight this dish on your menu')}
+        {existing ? (
+          <>
+            <Divider inset={48} />
+            {toggle('isActive', 'eye-outline', 'Visible on menu', 'Hide without deleting it')}
+          </>
+        ) : null}
+      </Card>
     </Screen>
   );
 }

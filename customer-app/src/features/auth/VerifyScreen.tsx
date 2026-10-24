@@ -1,13 +1,16 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { sendOtp, verifyOtp } from '@/core/auth/auth-actions';
-import { Button, Input, Screen, spacing, Text } from '@/ui';
+import { Button, Icon, IconButton, radius, Screen, spacing, Text, useTheme } from '@/ui';
 
 const RESEND_AFTER_S = 30;
+const LENGTH = 6;
 
 export function VerifyScreen() {
+  const t = useTheme();
   const { phone } = useLocalSearchParams<{ phone: string }>();
+  const input = useRef<ComponentRef<typeof TextInput>>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -15,12 +18,12 @@ export function VerifyScreen() {
 
   useEffect(() => {
     if (wait <= 0) return;
-    const t = setTimeout(() => setWait((w) => w - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(timer);
   }, [wait]);
 
   const verify = async (value = code) => {
-    if (value.length !== 6) return;
+    if (value.length !== LENGTH) return;
     setLoading(true);
     setError(null);
     try {
@@ -42,29 +45,77 @@ export function VerifyScreen() {
     }
   };
 
+  const pretty = phone?.startsWith('+91') ? `+91 ${phone.slice(3, 8)} ${phone.slice(8)}` : phone;
+
   return (
     <Screen>
+      <IconButton name="arrow-back" label="Back" onPress={() => router.back()} />
       <View style={{ gap: spacing.sm }}>
-        <Text variant="title">Verify your number</Text>
-        <Text muted>Enter the 6-digit code sent to {phone}</Text>
+        <Text variant="title">Enter verification code</Text>
+        <Text muted>
+          We sent a {LENGTH}-digit code to <Text variant="subheading">{pretty}</Text>
+        </Text>
       </View>
-      <Input
+
+      {/* one hidden input drives the six boxes so SMS autofill and paste keep working */}
+      <Pressable onPress={() => input.current?.focus()} style={styles.boxes} accessibilityLabel="Verification code">
+        {Array.from({ length: LENGTH }, (_, i) => {
+          const filled = i < code.length;
+          const current = i === code.length && !loading;
+          return (
+            <View
+              key={i}
+              style={[
+                styles.box,
+                { borderColor: error ? t.danger : current ? t.brand : filled ? t.text : t.border, backgroundColor: filled ? t.surfaceRaised : t.surface },
+              ]}>
+              <Text variant="title">{code[i] ?? ''}</Text>
+            </View>
+          );
+        })}
+      </Pressable>
+      <TextInput
+        ref={input}
         value={code}
         onChangeText={(v) => {
-          const digits = v.replace(/\D/g, '').slice(0, 6);
+          const digits = v.replace(/\D/g, '').slice(0, LENGTH);
           setCode(digits);
-          if (digits.length === 6) void verify(digits);
+          if (error) setError(null);
+          if (digits.length === LENGTH) void verify(digits);
         }}
         keyboardType="number-pad"
         textContentType="oneTimeCode"
         autoComplete="sms-otp"
         autoFocus
-        placeholder="••••••"
-        style={{ fontSize: 24, letterSpacing: 8, textAlign: 'center' }}
-        error={error}
+        maxLength={LENGTH}
+        style={styles.hidden}
       />
-      <Button title="Verify" size="lg" loading={loading} disabled={code.length !== 6} onPress={() => verify()} />
-      <Button title={wait > 0 ? `Resend code in ${wait}s` : 'Resend code'} kind="ghost" disabled={wait > 0} onPress={resend} />
+      {error ? (
+        <View style={styles.error}>
+          <Icon name="alert-circle" size={16} color={t.danger} />
+          <Text variant="label" color={t.danger}>{error}</Text>
+        </View>
+      ) : null}
+
+      <Button title="Verify" size="lg" loading={loading} disabled={code.length !== LENGTH} onPress={() => verify()} />
+      <View style={styles.resend}>
+        <Text muted>{"Didn't get it?"}</Text>
+        {wait > 0 ? (
+          <Text variant="label" subtle>Resend in 0:{String(wait).padStart(2, '0')}</Text>
+        ) : (
+          <Pressable onPress={resend} hitSlop={8} accessibilityRole="button">
+            <Text variant="label" color={t.brandText}>Resend code</Text>
+          </Pressable>
+        )}
+      </View>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  boxes: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm },
+  box: { flex: 1, aspectRatio: 0.85, maxWidth: 56, borderWidth: 1.5, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
+  error: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  resend: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.xs },
+});

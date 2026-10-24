@@ -34,7 +34,7 @@ export function TicketsView() {
           { header: 'Opened', cell: (t) => formatDateTime(t.createdAt) },
           { header: 'From', cell: (t) => <Badge>{t.app}</Badge> },
           { header: 'Issue', cell: (t) => <><div className="font-semibold">{humanize(t.category)}</div><div className="max-w-md text-xs text-muted">{t.description}</div></> },
-          { header: 'Order', cell: (t) => (t.orderId ? <Link className="text-brand" href={`/orders/${t.orderId}`}>view</Link> : '—') },
+          { header: 'Order', cell: (t) => (t.orderId ? <Link className="font-semibold text-brand-text hover:underline" href={`/orders/${t.orderId}`}>view</Link> : '—') },
           { header: 'Status', cell: (t) => <div className="flex flex-col gap-1"><Badge tone={statusTone(t.status)}>{humanize(t.status)}</Badge>{t.refundPaise ? <span className="text-xs">refunded {formatPaise(t.refundPaise)}</span> : null}</div> },
           {
             header: '',

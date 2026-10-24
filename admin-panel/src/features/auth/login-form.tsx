@@ -1,8 +1,9 @@
 'use client';
 
+import { ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, ErrorNote, Input, Logo } from '@/components/ui';
 import { supabase } from '@/core/auth/supabase-browser';
 
 /** Email + password, then TOTP when the admin has MFA enrolled (required for production admins). */
@@ -59,24 +60,29 @@ export function LoginForm({ notAdmin }: { notAdmin: boolean }) {
   };
 
   return (
-    <Card className="w-full max-w-sm">
-      <div className="mb-4">
-        <div className="text-2xl font-black text-brand">bocardo</div>
-        <div className="text-sm text-muted">Operations console</div>
+    <div className="w-full max-w-sm">
+      <div className="mb-8">
+        <Logo size={40} className="mb-8 lg:hidden" />
+        <h2 className="text-2xl font-extrabold tracking-tight">{mfa ? 'Two-step verification' : 'Welcome back'}</h2>
+        <p className="mt-1 text-sm text-muted">{mfa ? 'Enter the 6-digit code from your authenticator app.' : 'Sign in to the operations console.'}</p>
       </div>
       {mfa ? (
-        <form onSubmit={verify} className="flex flex-col gap-3">
-          <Input label="Authenticator code" inputMode="numeric" autoFocus maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} />
-          <Button type="submit" loading={loading}>Verify</Button>
+        <form onSubmit={verify} className="flex flex-col gap-4">
+          <Input label="Authenticator code" inputMode="numeric" autoFocus maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} className="h-11 text-center font-mono text-lg tracking-[0.5em]" />
+          <Button type="submit" loading={loading} className="h-11">Verify</Button>
         </form>
       ) : (
-        <form onSubmit={signIn} className="flex flex-col gap-3">
-          <Input label="Email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Button type="submit" loading={loading}>Sign in</Button>
+        <form onSubmit={signIn} className="flex flex-col gap-4">
+          <Input label="Email" type="email" autoComplete="email" placeholder="you@bocardo.app" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" />
+          <Input label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" />
+          <Button type="submit" loading={loading} className="mt-2 h-11">Sign in</Button>
         </form>
       )}
-      {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-    </Card>
+      {error ? <div className="mt-4"><ErrorNote error={new Error(error)} /></div> : null}
+      <p className="mt-8 flex items-center gap-1.5 text-xs text-subtle">
+        <ShieldCheck className="size-3.5" aria-hidden />
+        Admin access is audited. MFA is required in production.
+      </p>
+    </div>
   );
 }

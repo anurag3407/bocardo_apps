@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { Alert, Pressable } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import type { RiderApplyDtoVehicleType } from '@/core/api/generated/model';
 import { ridersApply } from '@/core/api/generated/rider/rider';
 import { refreshClaims, signOut } from '@/core/auth/auth-actions';
-import { Button, Input, radius, Row, Screen, spacing, Text, useTheme } from '@/ui';
+import { Badge, Button, Card, Input, Logo, radius, Row, Screen, spacing, Text, useTheme } from '@/ui';
 
-const VEHICLES: { key: RiderApplyDtoVehicleType; label: string }[] = [
-  { key: 'motorcycle', label: '🏍️ Bike' },
-  { key: 'scooter', label: '🛵 Scooter' },
-  { key: 'ev', label: '⚡ EV' },
-  { key: 'bicycle', label: '🚲 Cycle' },
+const VEHICLES: { key: RiderApplyDtoVehicleType; label: string; emoji: string }[] = [
+  { key: 'motorcycle', label: 'Bike', emoji: '🏍️' },
+  { key: 'scooter', label: 'Scooter', emoji: '🛵' },
+  { key: 'ev', label: 'EV', emoji: '⚡' },
+  { key: 'bicycle', label: 'Cycle', emoji: '🚲' },
 ];
 
 export function ApplyScreen() {
@@ -38,25 +38,49 @@ export function ApplyScreen() {
   };
 
   return (
-    <Screen scroll footer={<Button title="Join as delivery partner" size="lg" loading={saving} onPress={submit} />}>
-      <Text variant="title">Deliver with Bocardo</Text>
-      <Text muted>Flexible hours, weekly payouts. We verify your documents before your first shift.</Text>
-      <Input label="Full name (as on licence)" value={form.fullName} onChangeText={(v) => setForm((f) => ({ ...f, fullName: v }))} />
-      <Text variant="label">Vehicle</Text>
-      <Row>
-        {VEHICLES.map((v) => (
-          <Pressable key={v.key} onPress={() => setVehicle(v.key)} style={{ borderWidth: 1, borderRadius: radius.md, padding: spacing.sm, borderColor: vehicle === v.key ? t.brand : t.border }}>
-            <Text variant="label">{v.label}</Text>
-          </Pressable>
-        ))}
-      </Row>
-      {vehicle !== 'bicycle' ? (
-        <>
-          <Input label="Vehicle number" autoCapitalize="characters" value={form.vehicleNumber} onChangeText={(v) => setForm((f) => ({ ...f, vehicleNumber: v }))} />
-          <Input label="Driving licence number" autoCapitalize="characters" value={form.licenseNumber} onChangeText={(v) => setForm((f) => ({ ...f, licenseNumber: v }))} />
-        </>
-      ) : null}
-      <Button title="Sign out" kind="ghost" onPress={() => void signOut()} />
+    <Screen scroll tone="surface" footer={<Button title="Join as delivery partner" icon="arrow-forward" size="lg" loading={saving} onPress={submit} />}>
+      <Card style={{ backgroundColor: t.sky, gap: spacing.md }}>
+        <Logo size={44} wordmark tag="Rider" />
+        <Text variant="title" color={t.ink}>Deliver with Bocardo</Text>
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+          <Badge label="Flexible hours" tone="lime" icon="time" />
+          <Badge label="Weekly payouts" tone="sun" icon="wallet" />
+        </Row>
+        <Text variant="caption" color={t.ink} style={{ opacity: 0.75 }}>We verify your documents before your first shift.</Text>
+      </Card>
+      <Card style={{ gap: spacing.lg }}>
+        <Input label="Full name (as on licence)" icon="person-outline" value={form.fullName} onChangeText={(v) => setForm((f) => ({ ...f, fullName: v }))} />
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="label" muted>Vehicle</Text>
+          <Row gap={spacing.sm}>
+            {VEHICLES.map((v) => {
+              const active = vehicle === v.key;
+              return (
+                <Pressable
+                  key={v.key}
+                  onPress={() => setVehicle(v.key)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: active }}
+                  style={[styles.vehicle, { borderColor: active ? t.brand : t.border, backgroundColor: active ? t.brandSoft : t.surfaceRaised }]}>
+                  <Text style={{ fontSize: 26 }}>{v.emoji}</Text>
+                  <Text variant="label" color={active ? t.brandText : t.text}>{v.label}</Text>
+                </Pressable>
+              );
+            })}
+          </Row>
+        </View>
+        {vehicle !== 'bicycle' ? (
+          <>
+            <Input label="Vehicle number" icon="card-outline" placeholder="KA 01 AB 1234" autoCapitalize="characters" value={form.vehicleNumber} onChangeText={(v) => setForm((f) => ({ ...f, vehicleNumber: v }))} />
+            <Input label="Driving licence number" icon="document-text-outline" autoCapitalize="characters" value={form.licenseNumber} onChangeText={(v) => setForm((f) => ({ ...f, licenseNumber: v }))} />
+          </>
+        ) : null}
+      </Card>
+      <Button title="Sign out" kind="ghost" icon="log-out-outline" onPress={() => void signOut()} />
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  vehicle: { flex: 1, alignItems: 'center', gap: 4, borderWidth: 1.5, borderRadius: radius.md, paddingVertical: spacing.md },
+});

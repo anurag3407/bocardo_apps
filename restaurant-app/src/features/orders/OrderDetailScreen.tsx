@@ -4,10 +4,11 @@ import { startCall } from '@/core/calls/start-call';
 import { usePartnerOrder } from '@/core/api/generated/partner/partner';
 import { useCurrentRestaurant } from '@/features/outlet/selected-restaurant';
 import { formatPaise, formatTime } from '@/lib/format';
-import { Button, Card, Divider, ErrorState, Loading, Row, Screen, spacing, Text, VegMark } from '@/ui';
+import { Card, Divider, ErrorState, Icon, IconButton, ListItem, Loading, Row, Screen, spacing, Text, useTheme, VegMark } from '@/ui';
 import { useOrderActions } from './use-order-actions';
 
 export function OrderDetailScreen() {
+  const t = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { current } = useCurrentRestaurant();
   const rid = current?.id ?? '';
@@ -25,35 +26,76 @@ export function OrderDetailScreen() {
       { text: 'Keep order', style: 'cancel' },
     ]);
 
+  const live = ['PLACED', 'ACCEPTED', 'READY'].includes(o.status);
+
   return (
-    <Screen scroll edges={['bottom']}>
-      <Stack.Screen options={{ title: `#${o.shortCode}` }} />
-      <Text variant="title">{o.status.replace('_', ' ')}</Text>
-      <Text muted>{o.customerName} · placed {formatTime(o.placedAt)}{o.prepMinutes ? ` · prep ${o.prepMinutes} min` : ''}</Text>
-      <Card style={{ gap: spacing.sm }}>
+    <Screen scroll tone="surface" edges={['bottom']} contentStyle={{ gap: spacing.md }}>
+      <Stack.Screen options={{ title: `Order #${o.shortCode}` }} />
+      <Card style={{ backgroundColor: t.sky, gap: spacing.xs }}>
+        <Text variant="overline" color={t.ink} style={{ opacity: 0.7 }}>Status</Text>
+        <Text variant="title" color={t.ink} style={{ textTransform: 'capitalize' }}>{o.status.replace('_', ' ').toLowerCase()}</Text>
+        <Text color={t.ink} style={{ opacity: 0.75 }}>
+          {o.customerName} · placed {formatTime(o.placedAt)}{o.prepMinutes ? ` · prep ${o.prepMinutes} min` : ''}
+        </Text>
+      </Card>
+
+      <Card style={{ gap: spacing.md }}>
+        <Text variant="heading">Items</Text>
         {o.items.map((i, idx) => (
-          <Row key={idx} justify="space-between">
-            <Row><VegMark veg={i.isVeg} /><Text>{i.quantity} × {i.name}{i.variantName ? ` (${i.variantName})` : ''}</Text></Row>
+          <Row key={idx} justify="space-between" gap={spacing.md}>
+            <Row gap={spacing.sm} style={{ flex: 1 }}>
+              <VegMark veg={i.isVeg} />
+              <Text style={{ flex: 1 }}>
+                <Text variant="subheading" color={t.brandText}>{i.quantity} × </Text>
+                {i.name}{i.variantName ? ` (${i.variantName})` : ''}
+              </Text>
+            </Row>
             <Text>{formatPaise(i.lineTotalPaise)}</Text>
           </Row>
         ))}
         <Divider />
-        <Row justify="space-between"><Text variant="label">Item total</Text><Text variant="label">{formatPaise(o.itemTotalPaise)}</Text></Row>
+        <Row justify="space-between">
+          <Text variant="heading">Item total</Text>
+          <Text variant="heading">{formatPaise(o.itemTotalPaise)}</Text>
+        </Row>
       </Card>
-      {o.customerNote ? <Card><Text>📝 {o.customerNote}</Text></Card> : null}
-      {['PLACED', 'ACCEPTED', 'READY'].includes(o.status) ? (
-        <Button title={`Call ${o.customerName} (masked number)`} kind="ghost" onPress={() => void startCall(id, 'customer')} />
-      ) : null}
-      {o.rider ? (
-        <Card>
-          <Row justify="space-between">
-            <Text>🛵 {o.rider.name} · {o.rider.vehicleNumber}</Text>
-            {o.status !== 'DELIVERED' ? <Button title="Call" kind="secondary" onPress={() => void startCall(id, 'rider')} /> : null}
+
+      {o.customerNote ? (
+        <Card style={{ backgroundColor: t.sunSoft }}>
+          <Row gap={spacing.sm} style={{ alignItems: 'flex-start' }}>
+            <Icon name="document-text" size={18} color={t.warning} />
+            <Text style={{ flex: 1 }}>{o.customerNote}</Text>
           </Row>
         </Card>
       ) : null}
-      {o.cancelReason ? <Text>{o.cancelReason}</Text> : null}
-      {o.status === 'ACCEPTED' || o.status === 'READY' ? <Button title="Cancel order" kind="ghost" onPress={cancel} /> : null}
+
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        {live ? <ListItem icon="call-outline" title={`Call ${o.customerName}`} subtitle="Masked number — your phone stays private" onPress={() => void startCall(id, 'customer')} /> : null}
+        {o.rider ? (
+          <>
+            {live ? <Divider inset={48} /> : null}
+            <ListItem
+              icon="bicycle-outline"
+              title={o.rider.name ?? 'Delivery partner'}
+              subtitle={o.rider.vehicleNumber ?? undefined}
+              right={o.status !== 'DELIVERED' ? <IconButton name="call" label="Call rider" onPress={() => void startCall(id, 'rider')} size={36} background={t.successSoft} color={t.success} /> : undefined}
+            />
+          </>
+        ) : null}
+        {o.status === 'ACCEPTED' || o.status === 'READY' ? (
+          <>
+            <Divider inset={48} />
+            <ListItem icon="close-circle-outline" title="Cancel order" destructive onPress={cancel} />
+          </>
+        ) : null}
+      </Card>
+
+      {o.cancelReason ? (
+        <Row gap={spacing.sm}>
+          <Icon name="information-circle" size={16} color={t.danger} />
+          <Text color={t.danger} style={{ flex: 1 }}>{o.cancelReason}</Text>
+        </Row>
+      ) : null}
     </Screen>
   );
 }

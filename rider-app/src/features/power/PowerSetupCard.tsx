@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, View } from 'react-native';
 import { isBatteryRestricted, oemAutostartLabel, openOemAutostartSettings, requestUnrestrictedBattery } from '@/core/power/battery-optimization';
-import { Button, Card, spacing, Text, useTheme } from '@/ui';
+import { Button, Card, Icon, IconBadge, Row, spacing, Text, useTheme } from '@/ui';
 
 /**
  * Shown on Android until the rider whitelists Bocardo. Without this, MIUI/ColorOS/Funtouch
@@ -22,11 +22,23 @@ export function PowerSetupCard() {
 
   if (!restricted && !oemLabel) return null;
   return (
-    <Card style={{ gap: spacing.sm, borderColor: t.warning }}>
-      <Text variant="heading">Keep Bocardo running</Text>
-      <Text muted>Your phone may stop location sharing in the background. Allow these once so you keep receiving orders.</Text>
-      {restricted ? <Button title="Allow background running" onPress={() => void requestUnrestrictedBattery()} /> : <Text variant="caption" color={t.success}>✓ Battery optimisation disabled</Text>}
-      {oemLabel ? <Button title={`Enable ${oemLabel}`} kind="secondary" onPress={() => void openOemAutostartSettings()} /> : null}
+    <Card style={{ gap: spacing.md, backgroundColor: t.warningSoft }}>
+      <Row gap={spacing.md} style={{ alignItems: 'flex-start' }}>
+        <IconBadge name="battery-charging" size={40} shape="square" background={t.surfaceRaised} color={t.warning} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="heading">Keep Bocardo running</Text>
+          <Text variant="caption" muted>Your phone may stop location sharing in the background. Allow these once so you keep receiving orders.</Text>
+        </View>
+      </Row>
+      {restricted ? (
+        <Button title="Allow background running" icon="checkmark-circle" onPress={() => void requestUnrestrictedBattery()} />
+      ) : (
+        <Row gap={spacing.xs}>
+          <Icon name="checkmark-circle" size={16} color={t.success} />
+          <Text variant="caption" color={t.success}>Battery optimisation disabled</Text>
+        </Row>
+      )}
+      {oemLabel ? <Button title={`Enable ${oemLabel}`} icon="settings-outline" kind="outline" onPress={() => void openOemAutostartSettings()} /> : null}
     </Card>
   );
 }

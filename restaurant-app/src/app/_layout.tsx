@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+import { useTheme } from '@/ui';
 import { startSessionSync, useSession } from '@/core/auth/session-store';
 import { queryClient } from '@/core/query/query-client';
 import { ForceUpdateGate } from '@/features/shell/ForceUpdateGate';
@@ -13,6 +14,7 @@ startSessionSync();
 
 export default function RootLayout() {
   const scheme = useColorScheme();
+  const t = useTheme();
   const { status, roles } = useSession();
 
   useEffect(() => {
@@ -25,10 +27,17 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={navigationTheme(scheme === 'dark' ? DarkTheme : DefaultTheme, t)}>
         <ForceUpdateGate>
           {signedIn && isPartner ? <SignedInEffects /> : null}
-          <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
+          <Stack
+            screenOptions={{
+              headerBackButtonDisplayMode: 'minimal',
+              headerShadowVisible: false,
+              headerTintColor: t.text,
+              headerTitleStyle: { fontWeight: '700', fontSize: 17 },
+              headerStyle: { backgroundColor: t.background },
+            }}>
             <Stack.Protected guard={signedIn && isPartner}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="order/[id]" options={{ title: 'Order' }} />
@@ -47,4 +56,9 @@ export default function RootLayout() {
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+/** Native headers, tab bar and screen backgrounds follow the Bocardo palette. */
+function navigationTheme(base: typeof DefaultTheme, t: ReturnType<typeof useTheme>): typeof DefaultTheme {
+  return { ...base, colors: { ...base.colors, primary: t.brand, background: t.background, card: t.background, text: t.text, border: t.border } };
 }

@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { MenuItem } from '@/core/api/generated/model';
 import { formatPaise } from '@/lib/format';
-import { Button, Divider, radius, Row, spacing, Text, useTheme, VegMark } from '@/ui';
+import { Button, Card, Divider, Icon, IconButton, Row, spacing, Text, useTheme, VegMark } from '@/ui';
 
 export interface ChosenOptions {
   variantId: string | null;
@@ -49,33 +49,48 @@ export function ItemOptionsSheet({ item, onClose, onAdd }: { item: MenuItem | nu
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
-          <Row>
-            <VegMark veg={item.isVeg} />
-            <Text variant="heading">{item.name}</Text>
-          </Row>
+      <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: t.surface }}>
+        <View style={[styles.header, { backgroundColor: t.background, borderBottomColor: t.border }]}>
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            <Row gap={6}>
+              <VegMark veg={item.isVeg} />
+              {item.isBestseller ? <Text variant="caption" color={t.warning} style={{ fontWeight: '700' }}>Bestseller</Text> : null}
+            </Row>
+            <Text variant="title" style={{ fontSize: 20 }}>{item.name}</Text>
+            {item.description ? <Text variant="caption" muted numberOfLines={2}>{item.description}</Text> : null}
+          </View>
+          <IconButton name="close" label="Close" onPress={onClose} size={36} />
+        </View>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
           {item.variants.length ? (
-            <Section title="Choose an option">
+            <Section title="Choose an option" hint="Required · select 1">
               {item.variants.map((v) => (
-                <Option key={v.id} label={v.name} price={formatPaise(v.pricePaise)} selected={variantId === v.id} disabled={!v.inStock} onPress={() => setVariantId(v.id)} />
+                <Option key={v.id} kind="radio" label={v.name} price={formatPaise(v.pricePaise)} selected={variantId === v.id} disabled={!v.inStock} onPress={() => setVariantId(v.id)} />
               ))}
             </Section>
           ) : null}
           {item.addonGroups.map((g) => (
             <Section key={g.id} title={g.name} hint={g.minSelect > 0 ? `Required · choose ${g.minSelect === g.maxSelect ? g.minSelect : `${g.minSelect}-${g.maxSelect}`}` : `Optional · up to ${g.maxSelect}`}>
               {g.addons.map((a) => (
-                <Option key={a.id} label={a.name} price={a.pricePaise ? `+${formatPaise(a.pricePaise)}` : 'Free'} selected={addonIds.includes(a.id)} disabled={!a.inStock} onPress={() => toggleAddon(g.id, a.id)} />
+                <Option
+                  key={a.id}
+                  kind={g.maxSelect === 1 ? 'radio' : 'check'}
+                  label={a.name}
+                  price={a.pricePaise ? `+${formatPaise(a.pricePaise)}` : 'Free'}
+                  selected={addonIds.includes(a.id)}
+                  disabled={!a.inStock}
+                  onPress={() => toggleAddon(g.id, a.id)}
+                />
               ))}
             </Section>
           ))}
         </ScrollView>
-        <View style={[styles.footer, { borderTopColor: t.border }]}>
-          <Button title="Cancel" kind="ghost" onPress={onClose} style={{ flex: 1 }} />
+        <View style={[styles.footer, { backgroundColor: t.background }]}>
           <Button
-            title={state.invalid ? `Complete "${state.invalid.name}"` : `Add · ${formatPaise(state.unitPricePaise)}`}
+            size="lg"
+            title={state.invalid ? `Choose ${state.invalid.name}` : 'Add item'}
+            trailing={state.invalid ? undefined : formatPaise(state.unitPricePaise)}
             disabled={!!state.invalid}
-            style={{ flex: 2 }}
             onPress={() =>
               onAdd({
                 variantId: state.variant?.id ?? null,
@@ -94,28 +109,34 @@ export function ItemOptionsSheet({ item, onClose, onAdd }: { item: MenuItem | nu
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <View style={{ gap: spacing.sm }}>
-      <Text variant="label">{title}</Text>
-      {hint ? <Text variant="caption" muted>{hint}</Text> : null}
+    <Card style={{ gap: spacing.xs }}>
+      <Text variant="heading">{title}</Text>
+      {hint ? <Text variant="caption" muted style={{ marginBottom: spacing.xs }}>{hint}</Text> : null}
       <Divider />
       {children}
-    </View>
+    </Card>
   );
 }
 
-function Option({ label, price, selected, disabled, onPress }: { label: string; price: string; selected: boolean; disabled: boolean; onPress: () => void }) {
+function Option({ kind, label, price, selected, disabled, onPress }: { kind: 'radio' | 'check'; label: string; price: string; selected: boolean; disabled: boolean; onPress: () => void }) {
   const t = useTheme();
+  const icon = kind === 'radio' ? (selected ? 'radio-button-on' : 'radio-button-off') : selected ? 'checkbox' : 'square-outline';
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityState={{ selected, disabled }} style={[styles.option, disabled && { opacity: 0.4 }]}>
-      <View style={[styles.radio, { borderColor: selected ? t.brand : t.border, backgroundColor: selected ? t.brand : 'transparent' }]} />
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole={kind === 'radio' ? 'radio' : 'checkbox'}
+      accessibilityState={{ checked: selected, disabled }}
+      style={[styles.option, disabled && { opacity: 0.4 }]}>
       <Text style={{ flex: 1 }}>{label}{disabled ? ' (sold out)' : ''}</Text>
-      <Text muted>{price}</Text>
+      <Text variant="label" muted>{price}</Text>
+      <Icon name={icon} size={22} color={selected ? t.brand : t.textSubtle} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  option: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
-  radio: { width: 18, height: 18, borderRadius: radius.pill, borderWidth: 2 },
-  footer: { flexDirection: 'row', gap: spacing.md, padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
+  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, padding: spacing.lg, paddingTop: spacing.xl, borderBottomWidth: StyleSheet.hairlineWidth },
+  option: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  footer: { padding: spacing.lg, paddingBottom: spacing.md },
 });

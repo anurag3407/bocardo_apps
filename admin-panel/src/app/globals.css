@@ -2,47 +2,94 @@
 @import 'mapbox-gl/dist/mapbox-gl.css';
 @import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
-/* Bocardo console tokens — components use only these semantic colors. */
+/*
+ * Bocardo console tokens — components use only these semantic colors.
+ * Palette comes from the logo: sky disc, lime + sunflower bowls, ink outline.
+ * `brand` fills buttons; `brand-text` is the accessible blue for links/text on light surfaces.
+ */
 :root {
-  --bg: #f7f7f8;
+  --bg: #f3f6f8;
   --surface: #ffffff;
-  --border: #e6e6ea;
-  --text: #14151a;
-  --muted: #62656f;
-  --brand: #ff5a1f;
-  --brand-soft: #fff0ea;
-  --success: #1ba672;
-  --warning: #c98200;
-  --danger: #e23744;
+  --surface-2: #f7f9fa;
+  --border: #e4e9ed;
+  --text: #0b1b26;
+  --muted: #5b6b77;
+  --subtle: #8d9aa5;
+  --brand: #0596d1;
+  --brand-text: #0672a3;
+  --brand-soft: #e8f8fe;
+  --sky: #6cdcf9;
+  --lime: #b4f55a;
+  --sun: #ffd452;
+  --ink: #0b1b26;
+  --success: #15924f;
+  --success-soft: #e7f6ee;
+  --warning: #b86e00;
+  --warning-soft: #fff4e0;
+  --danger: #e03a45;
+  --danger-soft: #fdecee;
+  --sidebar: #0b1b26;
+  --sidebar-text: #c9d4dc;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e0f12;
-    --surface: #17181c;
-    --border: #2c2e35;
-    --text: #f4f4f6;
-    --muted: #a3a6b0;
-    --brand-soft: #3a1d12;
+    --bg: #0b1117;
+    --surface: #131b22;
+    --surface-2: #18222b;
+    --border: #24313b;
+    --text: #eef3f6;
+    --muted: #9cabb6;
+    --subtle: #6e7e8a;
+    --brand-text: #6cdcf9;
+    --brand-soft: #0d2b38;
+    --success-soft: #0f2a1c;
+    --warning: #f0a42a;
+    --warning-soft: #2e2210;
+    --danger-soft: #341519;
+    --sidebar: #070c10;
   }
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-border: var(--border);
   --color-text: var(--text);
   --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
   --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
   --color-brand-soft: var(--brand-soft);
+  --color-sky: var(--sky);
+  --color-lime: var(--lime);
+  --color-sun: var(--sun);
+  --color-ink: var(--ink);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-text: var(--sidebar-text);
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --shadow-card: 0 1px 2px rgb(11 27 38 / 0.04), 0 4px 16px rgb(11 27 38 / 0.05);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--sky);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }

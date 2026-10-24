@@ -1,13 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, SectionList, Switch, View } from 'react-native';
+import { Alert, SectionList, StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { getPartnerMenuQueryKey, partnerCreateCategory, partnerSetStock, usePartnerMenu } from '@/core/api/generated/partner/partner';
 import type { SetStockDtoType } from '@/core/api/generated/model';
 import { useCurrentRestaurant } from '@/features/outlet/selected-restaurant';
 import { formatPaise } from '@/lib/format';
-import { Button, ErrorState, Input, Loading, Row, Screen, spacing, Text, useTheme, VegMark } from '@/ui';
+import { Badge, Button, Card, ErrorState, Icon, Input, Loading, radius, Row, Screen, ScreenTitle, spacing, Text, Toggle, toneColors, useTheme, VegMark, type IconName, type Tone } from '@/ui';
 
 /** Fast stock toggles during service, plus entry points to edit the menu. */
 export function MenuScreen() {
@@ -38,57 +38,101 @@ export function MenuScreen() {
     setNewCategory('');
   };
 
+  const allItems = menu.data.categories.flatMap((c) => c.items);
+  const outOfStock = allItems.filter((i) => !i.inStock).length;
+
   return (
-    <Screen padded={false}>
+    <Screen padded={false} tone="surface">
       <SectionList
         sections={menu.data.categories.map((c) => ({ title: c.name, category: c, data: c.items }))}
         keyExtractor={(i) => i.id}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxxl }}
         ListHeaderComponent={
-          <View style={{ gap: spacing.md }}>
-            <Text variant="title">Menu</Text>
-            {canEdit ? <Button title="+ Add item" onPress={() => router.push('/menu/item')} /> : null}
+          <View style={{ gap: spacing.lg }}>
+            <ScreenTitle
+              title="Menu"
+              subtitle="Toggle stock instantly during service"
+              right={canEdit ? <Button title="Add item" icon="add" size="sm" onPress={() => router.push('/menu/item')} /> : undefined}
+            />
+            <Row>
+              <Stat label="Dishes" value={allItems.length} icon="restaurant" tone="brand" />
+              <Stat label="In stock" value={allItems.length - outOfStock} icon="checkmark-circle" tone="success" />
+              <Stat label="Sold out" value={outOfStock} icon="close-circle" tone={outOfStock ? 'danger' : 'neutral'} />
+            </Row>
           </View>
         }
         renderSectionHeader={({ section }) => (
-          <Text variant="heading" style={{ marginTop: spacing.lg }}>{section.title}{section.category.isActive ? '' : ' (hidden)'}</Text>
+          <Row gap={spacing.sm} style={{ marginTop: spacing.lg, marginBottom: spacing.xs }}>
+            <Text variant="heading" style={{ flex: 1 }}>{section.title}</Text>
+            {section.category.isActive ? <Text variant="label" subtle>{section.data.length} items</Text> : <Badge label="Hidden" icon="eye-off" />}
+          </Row>
         )}
         renderItem={({ item }) => (
-          <View style={{ gap: spacing.xs, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.border, opacity: item.isActive ? 1 : 0.5 }}>
-            <Row justify="space-between">
-              <Row>
-                <VegMark veg={item.isVeg} />
-                <Text onPress={canEdit ? () => router.push({ pathname: '/menu/item', params: { id: item.id } }) : undefined}>{item.name}</Text>
-              </Row>
-              <Row>
-                <Text muted>{formatPaise(item.pricePaise)}</Text>
-                <Switch value={item.inStock} onValueChange={(v) => setStock('item', item.id, v)} trackColor={{ true: t.success }} />
-              </Row>
+          <Card style={{ gap: spacing.sm, opacity: item.isActive ? 1 : 0.55 }} onPress={canEdit ? () => router.push({ pathname: '/menu/item', params: { id: item.id } }) : undefined}>
+            <Row gap={spacing.md}>
+              <VegMark veg={item.isVeg} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text variant="subheading" numberOfLines={1}>{item.name}</Text>
+                <Row gap={spacing.sm}>
+                  <Text variant="label" muted>{formatPaise(item.pricePaise)}</Text>
+                  {item.isBestseller ? <Badge label="Bestseller" tone="sun" icon="star" /> : null}
+                  {!item.isActive ? <Badge label="Hidden" /> : null}
+                </Row>
+              </View>
+              <View style={{ alignItems: 'center', gap: 2 }}>
+                <Toggle value={item.inStock} onValueChange={(v) => setStock('item', item.id, v)} tone="success" />
+                <Text variant="caption" color={item.inStock ? t.success : t.danger} style={{ fontSize: 10, fontWeight: '700' }}>{item.inStock ? 'IN STOCK' : 'SOLD OUT'}</Text>
+              </View>
             </Row>
-            {item.variants.map((v) => (
-              <Row key={v.id} justify="space-between">
-                <Text variant="caption" muted>   {v.name} · {formatPaise(v.pricePaise)}</Text>
-                <Switch value={v.inStock} onValueChange={(val) => setStock('variant', v.id, val)} />
-              </Row>
-            ))}
-            {item.addonGroups.flatMap((g) => g.addons).map((a) => (
-              <Row key={a.id} justify="space-between">
-                <Text variant="caption" muted>   + {a.name}</Text>
-                <Switch value={a.inStock} onValueChange={(val) => setStock('addon', a.id, val)} />
-              </Row>
-            ))}
-          </View>
+            {item.variants.length || item.addonGroups.length ? (
+              <View style={[styles.options, { borderColor: t.border }]}>
+                {item.variants.map((v) => (
+                  <Row key={v.id} justify="space-between">
+                    <Text variant="label" muted style={{ flex: 1 }}>{v.name} · {formatPaise(v.pricePaise)}</Text>
+                    <Toggle value={v.inStock} onValueChange={(val) => setStock('variant', v.id, val)} tone="success" />
+                  </Row>
+                ))}
+                {item.addonGroups.flatMap((g) => g.addons).map((a) => (
+                  <Row key={a.id} justify="space-between">
+                    <Text variant="label" muted style={{ flex: 1 }}>+ {a.name}</Text>
+                    <Toggle value={a.inStock} onValueChange={(val) => setStock('addon', a.id, val)} tone="success" />
+                  </Row>
+                ))}
+              </View>
+            ) : null}
+          </Card>
         )}
         ListFooterComponent={
           canEdit ? (
-            <Row>
-              <View style={{ flex: 1 }}><Input placeholder="New category name" value={newCategory} onChangeText={setNewCategory} /></View>
-              <Button title="Add" kind="secondary" onPress={addCategory} />
-            </Row>
+            <Card style={{ gap: spacing.md, marginTop: spacing.xl }}>
+              <Text variant="heading">New category</Text>
+              <Row style={{ alignItems: 'flex-start' }}>
+                <View style={{ flex: 1 }}><Input placeholder="e.g. Starters, Desserts" icon="folder-open-outline" value={newCategory} onChangeText={setNewCategory} /></View>
+                <Button title="Add" kind="secondary" onPress={addCategory} style={{ minHeight: 52 }} />
+              </Row>
+            </Card>
           ) : undefined
         }
       />
     </Screen>
   );
 }
+
+function Stat({ label, value, icon, tone }: { label: string; value: number; icon: IconName; tone: Tone }) {
+  const t = useTheme();
+  const c = toneColors(t, tone);
+  return (
+    <View style={[styles.stat, { backgroundColor: t.surfaceRaised }]}>
+      <Icon name={icon} size={18} color={c.fg} />
+      <Text variant="title" style={{ fontSize: 22 }}>{value}</Text>
+      <Text variant="caption" muted>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  options: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.sm, marginLeft: 27, gap: spacing.xs },
+  stat: { flex: 1, borderRadius: radius.md, padding: spacing.md, gap: 2 },
+});

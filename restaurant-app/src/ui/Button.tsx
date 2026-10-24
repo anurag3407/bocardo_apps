@@ -1,22 +1,27 @@
-import { ActivityIndicator, Pressable, StyleSheet, type PressableProps, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps, type ViewStyle } from 'react-native';
+import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 import { radius, spacing, useTheme } from './theme';
 
-type Kind = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Kind = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'dark';
 
 export interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
   kind?: Kind;
   loading?: boolean;
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
+  icon?: IconName;
+  /** Small text on the right of a large CTA, e.g. the total on "Place order". */
+  trailing?: string;
   style?: ViewStyle;
 }
 
-export function Button({ title, kind = 'primary', loading, disabled, size = 'md', style, ...rest }: ButtonProps) {
+export function Button({ title, kind = 'primary', loading, disabled, size = 'md', icon, trailing, style, ...rest }: ButtonProps) {
   const t = useTheme();
-  const bg = { primary: t.brand, secondary: t.brandSoft, ghost: 'transparent', danger: t.danger }[kind];
-  const fg = { primary: t.textInverse, secondary: t.brand, ghost: t.brand, danger: t.textInverse }[kind];
+  const bg = { primary: t.brand, secondary: t.brandSoft, outline: 'transparent', ghost: 'transparent', danger: t.danger, dark: t.ink }[kind];
+  const fg = { primary: t.textInverse, secondary: t.brandText, outline: t.brandText, ghost: t.brandText, danger: t.textInverse, dark: t.textInverse }[kind];
   const inactive = disabled || loading;
+  const height = { sm: 36, md: 48, lg: 56 }[size];
 
   return (
     <Pressable
@@ -25,16 +30,37 @@ export function Button({ title, kind = 'primary', loading, disabled, size = 'md'
       disabled={inactive}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: bg, paddingVertical: size === 'lg' ? spacing.lg : spacing.md, opacity: inactive ? 0.5 : pressed ? 0.85 : 1 },
-        kind === 'ghost' && { borderWidth: 1, borderColor: t.border },
+        { backgroundColor: bg, minHeight: height, paddingHorizontal: size === 'sm' ? spacing.md : spacing.lg, borderRadius: size === 'sm' ? radius.sm : radius.md },
+        kind === 'outline' && { borderWidth: 1.5, borderColor: t.brand },
+        { opacity: inactive ? 0.45 : pressed ? 0.82 : 1, transform: [{ scale: pressed && !inactive ? 0.985 : 1 }] },
+        trailing ? styles.split : null,
         style,
       ]}
       {...rest}>
-      {loading ? <ActivityIndicator color={fg} /> : <Text variant="label" color={fg} style={size === 'lg' && { fontSize: 16 }}>{title}</Text>}
+      {loading ? (
+        <ActivityIndicator color={fg} />
+      ) : (
+        <>
+          <View style={styles.content}>
+            {icon ? <Icon name={icon} size={size === 'sm' ? 16 : 18} color={fg} /> : null}
+            <Text variant="label" color={fg} style={[size !== 'sm' && { fontSize: 15 }, size === 'lg' && { fontSize: 16, fontWeight: '700' }]} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
+          {trailing ? (
+            <View style={styles.content}>
+              <Text variant="label" color={fg} style={{ fontSize: 16, fontWeight: '800' }}>{trailing}</Text>
+              <Icon name="chevron-forward" size={18} color={fg} />
+            </View>
+          ) : null}
+        </>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, minHeight: 44 },
+  base: { alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  split: { justifyContent: 'space-between' },
+  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

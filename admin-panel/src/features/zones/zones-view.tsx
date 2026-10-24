@@ -10,7 +10,7 @@ import { MapView } from '@/features/common/mapbox-map';
 import { ask, useAction } from '@/features/common/use-action';
 import { formatPaise } from '@/lib/format';
 
-const COLORS = ['#ff5a1f', '#1ba672', '#3b82f6', '#a855f7', '#c98200', '#e23744'];
+const COLORS = ['#0596d1', '#15924f', '#7c3aed', '#e08a00', '#e03a45', '#0b1b26'];
 
 /** Serviceability polygons + live pricing levers (surge, rain mode, fees). */
 export function ZonesView() {

@@ -55,7 +55,7 @@ export function OrderDetailView({ id }: { id: string }) {
             <dt className="text-muted">Customer</dt><dd>{o.customer.name} · {o.customer.phone}</dd>
             <dt className="text-muted">Deliver to</dt><dd>{[o.deliveryAddress.line1, o.deliveryAddress.line2, o.deliveryAddress.landmark].filter(Boolean).join(', ')}</dd>
             <dt className="text-muted">Restaurant</dt><dd>{o.restaurant.name} · {o.restaurant.phone}</dd>
-            <dt className="text-muted">Rider</dt><dd>{o.rider ? <Link className="text-brand" href={`/riders?q=${encodeURIComponent(o.rider.name ?? '')}`}>{o.rider.name} · {o.rider.vehicleNumber ?? ''}</Link> : '—'}</dd>
+            <dt className="text-muted">Rider</dt><dd>{o.rider ? <Link className="font-semibold text-brand-text hover:underline" href={`/riders?q=${encodeURIComponent(o.rider.name ?? '')}`}>{o.rider.name} · {o.rider.vehicleNumber ?? ''}</Link> : '—'}</dd>
             <dt className="text-muted">ETA</dt><dd>{formatDateTime(o.estimatedDeliveryAt)}</dd>
             {o.cancelReason ? <><dt className="text-muted">Cancelled</dt><dd className="text-danger">{o.cancelReason} ({o.cancelledBy})</dd></> : null}
           </dl>
@@ -65,9 +65,9 @@ export function OrderDetailView({ id }: { id: string }) {
           center={{ lat: o.restaurant.lat, lng: o.restaurant.lng }}
           zoom={12}
           points={[
-            { id: 'r', lat: o.restaurant.lat, lng: o.restaurant.lng, color: '#ff5a1f', label: o.restaurant.name },
-            { id: 'c', lat: o.deliveryAddress.lat, lng: o.deliveryAddress.lng, color: '#14151a', label: 'Customer' },
-            ...(o.rider?.lat && o.rider.lng ? [{ id: 'rd', lat: o.rider.lat, lng: o.rider.lng, color: '#1ba672', label: o.rider.name ?? 'Rider' }] : []),
+            { id: 'r', lat: o.restaurant.lat, lng: o.restaurant.lng, color: '#0596d1', label: o.restaurant.name },
+            { id: 'c', lat: o.deliveryAddress.lat, lng: o.deliveryAddress.lng, color: '#0b1b26', label: 'Customer' },
+            ...(o.rider?.lat && o.rider.lng ? [{ id: 'rd', lat: o.rider.lat, lng: o.rider.lng, color: '#15924f', label: o.rider.name ?? 'Rider' }] : []),
           ]}
         />
         <Card title="Bill">

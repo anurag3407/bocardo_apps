@@ -11,7 +11,7 @@ export function ForceUpdateGate({ children }: { children: ReactNode }) {
   if (!updateRequired) return <>{children}</>;
   return (
     <Screen>
-      <EmptyState title="Update required" message="A newer version of Bocardo is available. Please update to continue." action={{ label: 'Update now', onPress: () => Linking.openURL(STORE_URL) }} />
+      <EmptyState icon="rocket-outline" title="Update required" message="A newer version of Bocardo is available. Please update to continue." action={{ label: 'Update now', onPress: () => Linking.openURL(STORE_URL) }} />
     </Screen>
   );
 }

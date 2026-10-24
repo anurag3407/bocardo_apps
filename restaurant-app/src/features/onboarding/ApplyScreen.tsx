@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { partnerApply } from '@/core/api/generated/partner/partner';
 import { refreshClaims, signOut } from '@/core/auth/auth-actions';
 import { currentLocation } from '@/core/location/current-location';
 import { DeliveryMap } from '@/core/maps/delivery-map';
-import { Button, Input, Screen, spacing, Text } from '@/ui';
+import { Button, Card, Icon, Input, Logo, radius, Row, Screen, spacing, Text, useTheme } from '@/ui';
 
 /** Self-serve partner onboarding; the outlet goes live after Bocardo ops approves it. */
 export function ApplyScreen() {
+  const t = useTheme();
   const [form, setForm] = useState({ name: '', cuisines: '', phone: '', addressLine: '', fssaiLicense: '', gstin: '' });
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,18 +48,46 @@ export function ApplyScreen() {
   };
 
   return (
-    <Screen scroll footer={<Button title="Submit for review" size="lg" loading={saving} onPress={submit} />}>
-      <Text variant="title">Partner with Bocardo</Text>
-      <Text muted>Tell us about your restaurant. Our team verifies documents within 48 hours.</Text>
-      <Input label="Restaurant name" {...field('name')} />
-      <Input label="Cuisines (comma separated)" placeholder="North Indian, Biryani" {...field('cuisines')} />
-      <Input label="Outlet phone" keyboardType="phone-pad" {...field('phone')} />
-      <Input label="Full address" {...field('addressLine')} multiline />
-      {pin ? <DeliveryMap center={pin} markers={[{ id: 'outlet', kind: 'restaurant', ...pin }]} height={180} onCenterChanged={setPin} /> : null}
-      <Button title={pin ? 'Re-capture location' : 'Use current location'} kind="secondary" onPress={locate} />
-      <Input label="FSSAI licence no." {...field('fssaiLicense')} />
-      <Input label="GSTIN (optional)" autoCapitalize="characters" {...field('gstin')} />
-      <Button title="Sign out" kind="ghost" onPress={() => void signOut()} style={{ marginTop: spacing.lg }} />
+    <Screen scroll tone="surface" footer={<Button title="Submit for review" icon="send" size="lg" loading={saving} onPress={submit} />}>
+      <Card style={{ backgroundColor: t.sky, gap: spacing.md }}>
+        <Logo size={44} wordmark tag="Partner" />
+        <Text variant="title" color={t.ink}>Partner with Bocardo</Text>
+        <Text color={t.ink} style={{ opacity: 0.75 }}>Tell us about your restaurant. Our team verifies documents within 48 hours.</Text>
+      </Card>
+
+      <Card style={{ gap: spacing.lg }}>
+        <Text variant="heading">Restaurant details</Text>
+        <Input label="Restaurant name" icon="storefront-outline" {...field('name')} />
+        <Input label="Cuisines" icon="restaurant-outline" placeholder="North Indian, Biryani" hint="Separate with commas" {...field('cuisines')} />
+        <Input label="Outlet phone" icon="call-outline" keyboardType="phone-pad" {...field('phone')} />
+      </Card>
+
+      <Card style={{ gap: spacing.lg }}>
+        <Text variant="heading">Location</Text>
+        <Input label="Full address" {...field('addressLine')} multiline />
+        {pin ? (
+          <View style={{ borderRadius: radius.md, overflow: 'hidden' }}>
+            <DeliveryMap center={pin} markers={[{ id: 'outlet', kind: 'restaurant', ...pin }]} height={180} onCenterChanged={setPin} />
+          </View>
+        ) : null}
+        <Button title={pin ? 'Re-capture location' : 'Use current location'} icon="locate" kind="secondary" onPress={locate} />
+        {pin ? (
+          <Row gap={spacing.sm}>
+            <Icon name="checkmark-circle" size={16} color={t.success} />
+            <Text variant="caption" color={t.success}>Outlet location pinned</Text>
+          </Row>
+        ) : (
+          <Text variant="caption" muted>Capture this while you are at the restaurant.</Text>
+        )}
+      </Card>
+
+      <Card style={{ gap: spacing.lg }}>
+        <Text variant="heading">Documents</Text>
+        <Input label="FSSAI licence no." icon="document-text-outline" {...field('fssaiLicense')} />
+        <Input label="GSTIN (optional)" icon="receipt-outline" autoCapitalize="characters" {...field('gstin')} />
+      </Card>
+
+      <Button title="Sign out" kind="ghost" icon="log-out-outline" onPress={() => void signOut()} />
     </Screen>
   );
 }
