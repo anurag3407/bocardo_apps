@@ -133,10 +133,10 @@ export class CatalogService {
       .where((eb) =>
         eb.or([
           eb('name', 'ilike', `%${escapeLike(q.q)}%`),
-          eb(sql<boolean>`similarity(name, ${q.q}) > 0.3`, '=', true),
+          eb(sql<boolean>`extensions.similarity(name, ${q.q}) > 0.3`, '=', true),
         ]),
       )
-      .orderBy(sql`similarity(name, ${q.q})`, 'desc')
+      .orderBy(sql`extensions.similarity(name, ${q.q})`, 'desc')
       .limit(30)
       .execute();
 

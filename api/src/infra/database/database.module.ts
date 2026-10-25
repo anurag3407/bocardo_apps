@@ -14,16 +14,19 @@ types.setTypeParser(20, (v) => Number(v));
     {
       provide: DB,
       inject: [ENV],
-      useFactory: (env: Env): Db =>
-        new Kysely<Database>({
-          dialect: new PostgresDialect({
-            pool: new Pool({
-              connectionString: env.DATABASE_URL,
-              max: env.DATABASE_POOL_MAX,
-              idleTimeoutMillis: 30_000,
-            }),
-          }),
-        }),
+      useFactory: (env: Env): Db => {
+        const pool = new Pool({
+          connectionString: env.DATABASE_URL,
+          max: env.DATABASE_POOL_MAX,
+          idleTimeoutMillis: 30_000,
+        });
+        pool.on('connect', (client) => {
+          client.query('SET search_path TO public, extensions;').catch(() => {});
+        });
+        return new Kysely<Database>({
+          dialect: new PostgresDialect({ pool }),
+        });
+      },
     },
   ],
   exports: [DB],
