@@ -105,8 +105,8 @@ export function AddAddressScreen() {
       </View>
       {error ? (
         <Row gap={spacing.sm}>
-          <Icon name="alert-circle" size={16} color={t.danger} />
-          <Text color={t.danger} style={{ flex: 1 }}>{error}</Text>
+          <Icon name="alert-circle" size={16} color={t.dangerText} />
+          <Text color={t.dangerText} style={{ flex: 1 }}>{error}</Text>
         </Row>
       ) : null}
     </Screen>

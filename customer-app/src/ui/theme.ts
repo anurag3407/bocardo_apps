@@ -3,8 +3,9 @@ import { Platform, useColorScheme, type ViewStyle } from 'react-native';
 /**
  * Bocardo design tokens, derived from the logo: sky blue disc, lime + sunflower bowls, ink outline.
  * Components read colors only from here.
- *  - `brand` fills CTAs (white text on it passes 3:1 for bold labels)
- *  - `brandText` is the blue for small text and icons on light surfaces (passes 4.5:1)
+ *  - `brand` fills CTAs; `brandText` is the blue for small text and icons on light surfaces
+ *  - `success` / `warning` / `danger` are fills; the matching `*Text` tokens are AA-contrast
+ *    foregrounds in both themes (a fill that carries white text cannot also be readable as text)
  *  - `sky` / `lime` / `sun` are the logo colors, used for hero areas and highlights with `ink` text
  */
 const palette = {
@@ -12,11 +13,11 @@ const palette = {
   lime: '#B4F55A',
   sun: '#FFD452',
   ink: '#0B1B26',
-  brand: '#0596D1',
-  rating: '#1E8E3E',
-  success: '#15924F',
-  warning: '#E08A00',
-  danger: '#E03A45',
+  brand: '#0677A8',
+  rating: '#177A34',
+  success: '#0B7A3F',
+  warning: '#A65F00',
+  danger: '#CC2E39',
   veg: '#0F8A43',
   nonVeg: '#B5361F',
 };
@@ -32,13 +33,16 @@ export const colors = {
     successSoft: '#E7F6EE',
     warningSoft: '#FFF4E0',
     dangerSoft: '#FDECEE',
+    dangerText: '#CC2E39',
+    successText: '#0B7A3F',
+    warningText: '#A65F00',
     background: '#FFFFFF',
     surface: '#F3F6F8',
     surfaceRaised: '#FFFFFF',
     border: '#E4E9ED',
     text: '#0B1B26',
     textMuted: '#5B6B77',
-    textSubtle: '#8D9AA5',
+    textSubtle: '#63727E',
     textInverse: '#FFFFFF',
     overlay: 'rgba(11,27,38,0.5)',
     shadow: '#0B1B26',
@@ -53,13 +57,16 @@ export const colors = {
     successSoft: '#0F2A1C',
     warningSoft: '#2E2210',
     dangerSoft: '#341519',
+    dangerText: '#FF8A93',
+    successText: '#5BD68E',
+    warningText: '#F2B33D',
     background: '#0B1117',
     surface: '#131B22',
     surfaceRaised: '#18222B',
     border: '#24313B',
     text: '#EEF3F6',
     textMuted: '#9CABB6',
-    textSubtle: '#6E7E8A',
+    textSubtle: '#7C8B96',
     textInverse: '#FFFFFF',
     overlay: 'rgba(0,0,0,0.6)',
     shadow: '#000000',

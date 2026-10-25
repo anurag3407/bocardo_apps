@@ -24,7 +24,7 @@ export function PowerSetupCard() {
   return (
     <Card style={{ gap: spacing.md, backgroundColor: t.warningSoft }}>
       <Row gap={spacing.md} style={{ alignItems: 'flex-start' }}>
-        <IconBadge name="battery-charging" size={40} shape="square" background={t.surfaceRaised} color={t.warning} />
+        <IconBadge name="battery-charging" size={40} shape="square" background={t.surfaceRaised} color={t.warningText} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="heading">Keep Bocardo running</Text>
           <Text variant="caption" muted>Your phone may stop location sharing in the background. Allow these once so you keep receiving orders.</Text>
@@ -34,8 +34,8 @@ export function PowerSetupCard() {
         <Button title="Allow background running" icon="checkmark-circle" onPress={() => void requestUnrestrictedBattery()} />
       ) : (
         <Row gap={spacing.xs}>
-          <Icon name="checkmark-circle" size={16} color={t.success} />
-          <Text variant="caption" color={t.success}>Battery optimisation disabled</Text>
+          <Icon name="checkmark-circle" size={16} color={t.successText} />
+          <Text variant="caption" color={t.successText}>Battery optimisation disabled</Text>
         </Row>
       )}
       {oemLabel ? <Button title={`Enable ${oemLabel}`} icon="settings-outline" kind="outline" onPress={() => void openOemAutostartSettings()} /> : null}

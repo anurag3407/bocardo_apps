@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizePhone, sendOtp } from '@/core/auth/auth-actions';
 import { Button, Input, Logo, radius, Row, spacing, Text, useTheme } from '@/ui';
@@ -8,9 +9,26 @@ import { Button, Input, Logo, radius, Row, spacing, Text, useTheme } from '@/ui'
 /** Sky hero with the brand mark, white sheet with the phone field (Zomato-style entry). */
 export function LoginScreen({ headline = 'Food you love,\ndelivered fast', tag }: { headline?: string; tag?: string }) {
   const t = useTheme();
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // the hero flexes to fill the screen, so without this the sheet stays under the keyboard
+  useEffect(() => {
+    const toSheet = () => scroll.current?.scrollToEnd({ animated: true });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // rAF catches the resize; the delayed call lands after the keyboard animation settles
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      requestAnimationFrame(toSheet);
+      clearTimeout(timer);
+      timer = setTimeout(toSheet, 300);
+    });
+    return () => {
+      sub.remove();
+      clearTimeout(timer);
+    };
+  }, []);
 
   const submit = async () => {
     const normalized = normalizePhone(phone);
@@ -29,8 +47,10 @@ export function LoginScreen({ headline = 'Food you love,\ndelivered fast', tag }
 
   return (
     <View style={{ flex: 1, backgroundColor: t.sky }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
+      {/* the hero is always light, so system icons need dark glyphs for contrast */}
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <ScrollView ref={scroll} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
           <SafeAreaView edges={['top']} style={styles.hero}>
             <Logo size={56} wordmark tag={tag} />
             <View style={{ gap: spacing.md }}>
@@ -52,6 +72,7 @@ export function LoginScreen({ headline = 'Food you love,\ndelivered fast', tag }
             <Input
               prefix="+91"
               placeholder="Enter mobile number"
+              accessibilityLabel="Mobile number, +91"
               keyboardType="phone-pad"
               autoComplete="tel"
               textContentType="telephoneNumber"

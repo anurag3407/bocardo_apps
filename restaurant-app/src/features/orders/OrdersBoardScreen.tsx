@@ -66,13 +66,13 @@ export function OrdersBoardScreen() {
           </View>
           <View style={[styles.status, { backgroundColor: current.isOpen ? t.successSoft : t.surface }]}>
             <View style={[styles.dot, { backgroundColor: current.isOpen ? t.success : t.textSubtle }]} />
-            <Text variant="label" color={current.isOpen ? t.success : t.textMuted}>{current.isOpen ? 'Online' : 'Offline'}</Text>
-            <Toggle value={current.isOpen} onValueChange={toggleOpen} tone="success" />
+            <Text variant="label" color={current.isOpen ? t.successText : t.textMuted}>{current.isOpen ? 'Online' : 'Offline'}</Text>
+            <Toggle value={current.isOpen} onValueChange={toggleOpen} tone="success" accessibilityLabel="Outlet open for orders" />
           </View>
         </Row>
         {current.busyUntil ? (
           <Row gap={spacing.sm} style={[styles.banner, { backgroundColor: t.warningSoft }]}>
-            <Icon name="pause-circle" size={18} color={t.warning} />
+            <Icon name="pause-circle" size={18} color={t.warningText} />
             <Text variant="label" style={{ flex: 1 }}>Busy mode until {new Date(current.busyUntil).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}</Text>
           </Row>
         ) : null}

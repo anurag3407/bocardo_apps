@@ -54,7 +54,7 @@ export function ItemOptionsSheet({ item, onClose, onAdd }: { item: MenuItem | nu
           <View style={{ flex: 1, gap: spacing.xs }}>
             <Row gap={6}>
               <VegMark veg={item.isVeg} />
-              {item.isBestseller ? <Text variant="caption" color={t.warning} style={{ fontWeight: '700' }}>Bestseller</Text> : null}
+              {item.isBestseller ? <Text variant="caption" color={t.warningText} style={{ fontWeight: '700' }}>Bestseller</Text> : null}
             </Row>
             <Text variant="title" style={{ fontSize: 20 }}>{item.name}</Text>
             {item.description ? <Text variant="caption" muted numberOfLines={2}>{item.description}</Text> : null}

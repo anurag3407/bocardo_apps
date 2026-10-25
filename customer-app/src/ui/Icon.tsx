@@ -7,7 +7,8 @@ export type IconName = ComponentProps<typeof Ionicons>['name'];
 
 export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color?: string }) {
   const t = useTheme();
-  return <Ionicons name={name} size={size} color={color ?? t.text} />;
+  // decorative: the surrounding label or button carries the meaning
+  return <Ionicons name={name} size={size} color={color ?? t.text} accessible={false} importantForAccessibility="no-hide-descendants" />;
 }
 
 /** Icon inside a tinted circle/rounded square — list leading icons, empty states, stat tiles. */

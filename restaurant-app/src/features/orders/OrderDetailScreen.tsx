@@ -63,7 +63,7 @@ export function OrderDetailScreen() {
       {o.customerNote ? (
         <Card style={{ backgroundColor: t.sunSoft }}>
           <Row gap={spacing.sm} style={{ alignItems: 'flex-start' }}>
-            <Icon name="document-text" size={18} color={t.warning} />
+            <Icon name="document-text" size={18} color={t.warningText} />
             <Text style={{ flex: 1 }}>{o.customerNote}</Text>
           </Row>
         </Card>
@@ -78,7 +78,7 @@ export function OrderDetailScreen() {
               icon="bicycle-outline"
               title={o.rider.name ?? 'Delivery partner'}
               subtitle={o.rider.vehicleNumber ?? undefined}
-              right={o.status !== 'DELIVERED' ? <IconButton name="call" label="Call rider" onPress={() => void startCall(id, 'rider')} size={36} background={t.successSoft} color={t.success} /> : undefined}
+              right={o.status !== 'DELIVERED' ? <IconButton name="call" label="Call rider" onPress={() => void startCall(id, 'rider')} size={36} background={t.successSoft} color={t.successText} /> : undefined}
             />
           </>
         ) : null}
@@ -92,8 +92,8 @@ export function OrderDetailScreen() {
 
       {o.cancelReason ? (
         <Row gap={spacing.sm}>
-          <Icon name="information-circle" size={16} color={t.danger} />
-          <Text color={t.danger} style={{ flex: 1 }}>{o.cancelReason}</Text>
+          <Icon name="information-circle" size={16} color={t.dangerText} />
+          <Text color={t.dangerText} style={{ flex: 1 }}>{o.cancelReason}</Text>
         </Row>
       ) : null}
     </Screen>

@@ -23,8 +23,8 @@ export function RateOrder({ orderId, hasRider, onDone }: { orderId: string; hasR
       </View>
       <Stars label="Food" icon="restaurant" value={food} onChange={setFood} />
       {hasRider ? <Stars label="Delivery" icon="bicycle" value={rider} onChange={setRider} /> : null}
-      <Input placeholder="Tell us more (optional)" value={comment} onChangeText={setComment} multiline />
-      {rate.error ? <Text variant="caption" color={t.danger}>{errorMessage(rate.error)}</Text> : null}
+      <Input placeholder="Tell us more (optional)" accessibilityLabel="Rating comment (optional)" value={comment} onChangeText={setComment} multiline />
+      {rate.error ? <Text variant="caption" color={t.dangerText}>{errorMessage(rate.error)}</Text> : null}
       <Button title="Submit rating" icon="send" disabled={!food} loading={rate.isPending} onPress={() => rate.mutate()} />
     </Card>
   );
@@ -40,7 +40,14 @@ function Stars({ label, icon, value, onChange }: { label: string; icon: IconName
       </Row>
       <Row gap={spacing.xs}>
         {[1, 2, 3, 4, 5].map((n) => (
-          <Pressable key={n} onPress={() => onChange(n)} accessibilityLabel={`${n} star`} hitSlop={6}>
+          <Pressable
+            key={n}
+            onPress={() => onChange(n)}
+            accessibilityRole="button"
+            accessibilityLabel={`${label} rating: ${n} star${n === 1 ? '' : 's'}`}
+            accessibilityState={{ selected: n === value }}
+            hitSlop={8}
+            style={{ padding: 2 }}>
             <Icon name={n <= value ? 'star' : 'star-outline'} size={28} color={n <= value ? t.sun : t.textSubtle} />
           </Pressable>
         ))}

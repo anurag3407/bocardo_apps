@@ -29,6 +29,7 @@ export function SearchScreen() {
       <Input
         icon="search"
         placeholder="Search for biryani, pizza, a restaurant…"
+        accessibilityLabel="Search restaurants and dishes"
         value={text}
         onChangeText={setText}
         autoFocus

@@ -27,7 +27,7 @@ export function RestaurantCard({ restaurant: r, onPress, compact }: { restaurant
             <Text variant="caption" muted>{r.etaMinutes} min · {formatDistance(r.distanceM)}</Text>
           </Row>
           <Text variant="caption" muted numberOfLines={1}>{r.cuisines.join(', ')}</Text>
-          {closed ? <Text variant="caption" color={t.danger}>{closed}</Text> : null}
+          {closed ? <Text variant="caption" color={t.dangerText}>{closed}</Text> : null}
         </View>
       </Card>
     );
@@ -39,7 +39,7 @@ export function RestaurantCard({ restaurant: r, onPress, compact }: { restaurant
         <Cover uri={r.coverImageUrl} style={styles.cover} />
         {r.isVegOnly ? <View style={styles.topLeft}><Badge label="Pure veg" tone="lime" icon="leaf" /></View> : null}
         <View style={[styles.eta, { backgroundColor: t.surfaceRaised }]}>
-          <Icon name="time" size={13} color={t.success} />
+          <Icon name="time" size={13} color={t.successText} />
           <Text variant="caption" style={{ fontWeight: '800' }}>{r.etaMinutes} min</Text>
         </View>
         {closed ? (

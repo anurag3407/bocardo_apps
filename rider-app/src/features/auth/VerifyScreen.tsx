@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { sendOtp, verifyOtp } from '@/core/auth/auth-actions';
 import { Button, Icon, IconButton, radius, Screen, spacing, Text, useTheme } from '@/ui';
@@ -10,7 +10,6 @@ const LENGTH = 6;
 export function VerifyScreen() {
   const t = useTheme();
   const { phone } = useLocalSearchParams<{ phone: string }>();
-  const input = useRef<ComponentRef<typeof TextInput>>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,7 +47,7 @@ export function VerifyScreen() {
   const pretty = phone?.startsWith('+91') ? `+91 ${phone.slice(3, 8)} ${phone.slice(8)}` : phone;
 
   return (
-    <Screen>
+    <Screen scroll>
       <IconButton name="arrow-back" label="Back" onPress={() => router.back()} />
       <View style={{ gap: spacing.sm }}>
         <Text variant="title">Enter verification code</Text>
@@ -57,43 +56,48 @@ export function VerifyScreen() {
         </Text>
       </View>
 
-      {/* one hidden input drives the six boxes so SMS autofill and paste keep working */}
-      <Pressable onPress={() => input.current?.focus()} style={styles.boxes} accessibilityLabel="Verification code">
-        {Array.from({ length: LENGTH }, (_, i) => {
-          const filled = i < code.length;
-          const current = i === code.length && !loading;
-          return (
-            <View
-              key={i}
-              style={[
-                styles.box,
-                { borderColor: error ? t.danger : current ? t.brand : filled ? t.text : t.border, backgroundColor: filled ? t.surfaceRaised : t.surface },
-              ]}>
-              <Text variant="title">{code[i] ?? ''}</Text>
-            </View>
-          );
-        })}
-      </Pressable>
-      <TextInput
-        ref={input}
-        value={code}
-        onChangeText={(v) => {
-          const digits = v.replace(/\D/g, '').slice(0, LENGTH);
-          setCode(digits);
-          if (error) setError(null);
-          if (digits.length === LENGTH) void verify(digits);
-        }}
-        keyboardType="number-pad"
-        textContentType="oneTimeCode"
-        autoComplete="sms-otp"
-        autoFocus
-        maxLength={LENGTH}
-        style={styles.hidden}
-      />
+      {/* one invisible full-size input drives the six boxes so SMS autofill, paste and
+          screen readers get a normal labelled text field instead of six stray digits */}
+      <View style={styles.boxesWrap}>
+        <View style={styles.boxes} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {Array.from({ length: LENGTH }, (_, i) => {
+            const filled = i < code.length;
+            const current = i === code.length && !loading;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.box,
+                  { borderColor: error ? t.danger : current ? t.brand : filled ? t.text : t.border, backgroundColor: filled ? t.surfaceRaised : t.surface },
+                ]}>
+                <Text variant="title">{code[i] ?? ''}</Text>
+              </View>
+            );
+          })}
+        </View>
+        <TextInput
+          value={code}
+          onChangeText={(v) => {
+            const digits = v.replace(/\D/g, '').slice(0, LENGTH);
+            setCode(digits);
+            if (error) setError(null);
+            if (digits.length === LENGTH) void verify(digits);
+          }}
+          keyboardType="number-pad"
+          textContentType="oneTimeCode"
+          autoComplete="sms-otp"
+          autoFocus
+          maxLength={LENGTH}
+          accessibilityLabel="Verification code"
+          accessibilityHint={error ?? `Enter the ${LENGTH}-digit code we sent by SMS`}
+          caretHidden
+          style={styles.hidden}
+        />
+      </View>
       {error ? (
-        <View style={styles.error}>
-          <Icon name="alert-circle" size={16} color={t.danger} />
-          <Text variant="label" color={t.danger}>{error}</Text>
+        <View style={styles.error} accessibilityLiveRegion="polite">
+          <Icon name="alert-circle" size={16} color={t.dangerText} />
+          <Text variant="label" color={t.dangerText}>{error}</Text>
         </View>
       ) : null}
 
@@ -113,9 +117,10 @@ export function VerifyScreen() {
 }
 
 const styles = StyleSheet.create({
-  boxes: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm },
+  boxesWrap: { position: 'relative', marginTop: spacing.sm },
+  boxes: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   box: { flex: 1, aspectRatio: 0.85, maxWidth: 56, borderWidth: 1.5, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
+  hidden: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: 0.02, color: 'transparent' },
   error: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   resend: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.xs },
 });

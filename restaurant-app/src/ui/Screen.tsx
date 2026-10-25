@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, RefreshControl, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { Text } from './Text';
 import { elevation, spacing, useTheme } from './theme';
@@ -29,22 +29,27 @@ export function Screen({ children, scroll, padded = true, edges = ['top'], foote
   const header = title ? <ScreenTitle title={title} subtitle={subtitle} right={headerRight} /> : null;
   return (
     <SafeAreaView edges={edges} style={[styles.root, { backgroundColor: bg }]}>
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={[inner, { paddingBottom: spacing.xxxl }]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={t.brand} colors={[t.brand]} /> : undefined}>
-          {header}
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[styles.root, inner]}>
-          {header}
-          {children}
-        </View>
-      )}
-      {footer ? <View style={[styles.footer, { backgroundColor: t.surfaceRaised }, elevation(3, t)]}>{footer}</View> : null}
+      {/* Android edge-to-edge no longer resizes the window for the keyboard, so the KAV must
+          make room itself; keeping the footer inside it keeps CTAs above the keyboard too. */}
+      <KeyboardAvoidingView behavior="padding" style={styles.root}>
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={[inner, { paddingBottom: spacing.xxxl }]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={t.brand} colors={[t.brand]} /> : undefined}>
+            {header}
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[styles.root, inner]}>
+            {header}
+            {children}
+          </View>
+        )}
+        {footer ? <View style={[styles.footer, { backgroundColor: t.surfaceRaised }, elevation(3, t)]}>{footer}</View> : null}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

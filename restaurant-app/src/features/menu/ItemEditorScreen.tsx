@@ -48,7 +48,7 @@ export function ItemEditorScreen() {
   };
 
   const toggle = (key: 'isBestseller' | 'isActive', icon: IconName, label: string, subtitle: string) => (
-    <ListItem icon={icon} title={label} subtitle={subtitle} chevron={false} right={<Toggle value={form[key]} onValueChange={(v) => setForm((f) => ({ ...f, [key]: v }))} />} />
+    <ListItem icon={icon} title={label} subtitle={subtitle} chevron={false} right={<Toggle value={form[key]} onValueChange={(v) => setForm((f) => ({ ...f, [key]: v }))} accessibilityLabel={label} />} />
   );
 
   return (

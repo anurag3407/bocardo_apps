@@ -89,10 +89,10 @@ export function ListItem({
   chevron?: boolean;
 }) {
   const t = useTheme();
-  const tint = destructive ? t.danger : t.text;
+  const tint = destructive ? t.dangerText : t.text;
   const body = (
     <>
-      {icon ? <IconBadge name={icon} size={36} shape="square" background={destructive ? t.dangerSoft : t.surface} color={destructive ? t.danger : t.text} /> : null}
+      {icon ? <IconBadge name={icon} size={36} shape="square" background={destructive ? t.dangerSoft : t.surface} color={destructive ? t.dangerText : t.text} /> : null}
       <View style={{ flex: 1, gap: 1 }}>
         <Text variant="subheading" color={tint}>{title}</Text>
         {subtitle ? <Text variant="caption" muted numberOfLines={2}>{subtitle}</Text> : null}

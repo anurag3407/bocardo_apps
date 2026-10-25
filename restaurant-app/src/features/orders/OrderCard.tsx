@@ -58,7 +58,7 @@ export function OrderCard({ order: o, restaurantId, defaultPrep }: { order: Part
       </View>
       {o.customerNote ? (
         <Row gap={spacing.sm} style={[styles.note, { backgroundColor: t.sunSoft }]}>
-          <Icon name="document-text" size={16} color={t.warning} />
+          <Icon name="document-text" size={16} color={t.warningText} />
           <Text variant="label" style={{ flex: 1 }}>{o.customerNote}</Text>
         </Row>
       ) : null}
@@ -68,8 +68,8 @@ export function OrderCard({ order: o, restaurantId, defaultPrep }: { order: Part
           <Row justify="space-between">
             <Text variant="label" muted>Preparation time</Text>
             <Row gap={4} style={[styles.timer, { backgroundColor: urgent ? t.dangerSoft : t.surface }]}>
-              <Icon name="timer-outline" size={14} color={urgent ? t.danger : t.textMuted} />
-              <Text variant="label" color={urgent ? t.danger : t.text}>
+              <Icon name="timer-outline" size={14} color={urgent ? t.dangerText : t.textMuted} />
+              <Text variant="label" color={urgent ? t.dangerText : t.text}>
                 Accept in {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
               </Text>
             </Row>
@@ -95,7 +95,7 @@ export function OrderCard({ order: o, restaurantId, defaultPrep }: { order: Part
 
       {o.rider ? (
         <Row gap={spacing.sm}>
-          <Icon name="bicycle" size={16} color={t.success} />
+          <Icon name="bicycle" size={16} color={t.successText} />
           <Text variant="caption" muted style={{ flex: 1 }}>
             {o.rider.name ?? 'Rider'}{o.rider.vehicleNumber ? ` · ${o.rider.vehicleNumber}` : ''}{o.dispatchStatus === 'AT_RESTAURANT' ? ' · waiting at counter' : ''}
           </Text>

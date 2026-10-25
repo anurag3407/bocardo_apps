@@ -66,7 +66,7 @@ export function OutletScreen() {
 
       <Card style={{ gap: spacing.md }}>
         <Row gap={spacing.md}>
-          <IconBadge name="pause-circle" size={40} shape="square" background={t.warningSoft} color={t.warning} />
+          <IconBadge name="pause-circle" size={40} shape="square" background={t.warningSoft} color={t.warningText} />
           <View style={{ flex: 1 }}>
             <Text variant="heading">Busy mode</Text>
             <Text variant="caption" muted>
@@ -91,7 +91,7 @@ export function OutletScreen() {
               </View>
             </Row>
             <Row style={{ alignItems: 'flex-start' }}>
-              <View style={{ flex: 1 }}><Input keyboardType="number-pad" icon="timer-outline" value={prep ?? String(current.avgPrepMinutes)} onChangeText={setPrep} hint="minutes" /></View>
+              <View style={{ flex: 1 }}><Input keyboardType="number-pad" icon="timer-outline" accessibilityLabel="Average preparation time in minutes" value={prep ?? String(current.avgPrepMinutes)} onChangeText={setPrep} hint="minutes" /></View>
               <Button title="Save" disabled={prep === null} onPress={() => run(() => partnerUpdate(rid, { avgPrepMinutes: Number(prep) }).then(() => setPrep(null)))} style={{ minHeight: 52 }} />
             </Row>
           </Card>
@@ -111,8 +111,8 @@ export function OutletScreen() {
             {DAYS.map((day, d) => (
               <Row key={day}>
                 <Text variant="subheading" style={{ width: 44 }}>{day}</Text>
-                <View style={{ flex: 1 }}><Input value={editedHours[d].opensAt} placeholder="10:00" onChangeText={(v) => setHours({ ...editedHours, [d]: { ...editedHours[d], opensAt: v } })} /></View>
-                <View style={{ flex: 1 }}><Input value={editedHours[d].closesAt} placeholder="23:00" onChangeText={(v) => setHours({ ...editedHours, [d]: { ...editedHours[d], closesAt: v } })} /></View>
+                <View style={{ flex: 1 }}><Input value={editedHours[d].opensAt} accessibilityLabel={`${day} opening time`} placeholder="10:00" onChangeText={(v) => setHours({ ...editedHours, [d]: { ...editedHours[d], opensAt: v } })} /></View>
+                <View style={{ flex: 1 }}><Input value={editedHours[d].closesAt} accessibilityLabel={`${day} closing time`} placeholder="23:00" onChangeText={(v) => setHours({ ...editedHours, [d]: { ...editedHours[d], closesAt: v } })} /></View>
               </Row>
             ))}
             <Text variant="caption" subtle>Closing earlier than opening means the slot runs past midnight.</Text>

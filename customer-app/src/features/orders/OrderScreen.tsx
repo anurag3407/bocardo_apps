@@ -97,11 +97,11 @@ export function OrderScreen() {
             <Text variant="title" color={t.ink}>{headline.title}</Text>
             <Text color={t.ink} style={{ opacity: 0.75 }}>{headline.subtitle}</Text>
           </View>
-          <IconBadge name={heroIcon} size={48} background={t.surfaceRaised} color={failed ? t.danger : t.ink} />
+          <IconBadge name={heroIcon} size={48} background={t.surfaceRaised} color={failed ? t.dangerText : t.ink} />
         </Row>
         {active && eta !== null && o.status !== 'PAYMENT_PENDING' ? (
           <View style={[styles.eta, { backgroundColor: t.surfaceRaised }]}>
-            <Icon name="time" size={18} color={t.success} />
+            <Icon name="time" size={18} color={t.successText} />
             <Text variant="subheading">Arriving in <Text variant="subheading" style={{ fontWeight: '800' }}>{eta} min</Text></Text>
           </View>
         ) : null}
@@ -147,7 +147,7 @@ export function OrderScreen() {
                 {o.rider.vehicleNumber ? <Text variant="caption" muted>{o.rider.vehicleNumber}</Text> : null}
               </Row>
             </View>
-            {active ? <IconButton name="call" label="Call delivery partner" onPress={() => void startCall(id, 'rider')} background={t.successSoft} color={t.success} size={44} /> : null}
+            {active ? <IconButton name="call" label="Call delivery partner" onPress={() => void startCall(id, 'rider')} background={t.successSoft} color={t.successText} size={44} /> : null}
           </Row>
         </Card>
       ) : null}
@@ -217,8 +217,8 @@ export function OrderScreen() {
         })}
         {o.cancelReason ? (
           <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
-            <Icon name="information-circle" size={16} color={t.danger} />
-            <Text variant="caption" color={t.danger} style={{ flex: 1 }}>{o.cancelReason}</Text>
+            <Icon name="information-circle" size={16} color={t.dangerText} />
+            <Text variant="caption" color={t.dangerText} style={{ flex: 1 }}>{o.cancelReason}</Text>
           </Row>
         ) : null}
       </Card>

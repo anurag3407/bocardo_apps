@@ -20,7 +20,7 @@ export function Card({ onPress, padded = true, variant = 'elevated', style, chil
   const body = [styles.card, look, padded && styles.padded, style];
   if (!onPress) return <View style={body} {...rest}>{children}</View>;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [...body, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]} {...rest}>
+    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [...body, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]} {...rest}>
       {children}
     </Pressable>
   );

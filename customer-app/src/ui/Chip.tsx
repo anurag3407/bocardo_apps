@@ -12,6 +12,7 @@ export function Chip({ label, active, onPress, icon, disabled }: { label: string
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ selected: active, disabled }}
+      hitSlop={6}
       style={({ pressed }) => [
         styles.chip,
         { borderColor: active ? t.brand : t.border, backgroundColor: active ? t.brandSoft : t.surfaceRaised, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
@@ -46,10 +47,10 @@ export function Segmented<K extends string>({ value, onChange, options }: { valu
 }
 
 /** Brand-colored switch. */
-export function Toggle({ value, onValueChange, disabled, tone = 'brand' }: { value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean; tone?: 'brand' | 'success' | 'veg' }) {
+export function Toggle({ value, onValueChange, disabled, tone = 'brand', accessibilityLabel }: { value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean; tone?: 'brand' | 'success' | 'veg'; accessibilityLabel?: string }) {
   const t = useTheme();
   const on = { brand: t.brand, success: t.success, veg: t.veg }[tone];
-  return <Switch value={value} onValueChange={onValueChange} disabled={disabled} trackColor={{ true: on, false: t.border }} thumbColor="#FFFFFF" ios_backgroundColor={t.border} />;
+  return <Switch value={value} onValueChange={onValueChange} disabled={disabled} accessibilityRole="switch" accessibilityLabel={accessibilityLabel} accessibilityState={{ checked: value, disabled: !!disabled }} trackColor={{ true: on, false: t.border }} thumbColor="#FFFFFF" ios_backgroundColor={t.border} />;
 }
 
 const styles = StyleSheet.create({

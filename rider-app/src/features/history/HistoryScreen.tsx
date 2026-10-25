@@ -23,13 +23,13 @@ export function HistoryScreen() {
           return (
             <Card>
               <Row gap={spacing.md}>
-                <IconBadge name={done ? 'checkmark-done' : 'close'} size={40} background={done ? t.successSoft : t.surface} color={done ? t.success : t.textMuted} />
+                <IconBadge name={done ? 'checkmark-done' : 'close'} size={40} background={done ? t.successSoft : t.surface} color={done ? t.successText : t.textMuted} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text variant="subheading" numberOfLines={1}>{o.restaurant.name}</Text>
                   <Text variant="caption" muted>{formatDateTime(o.createdAt)} · #{o.shortCode}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <Text variant="subheading" color={done ? t.success : t.text}>{formatPaise(o.payoutPaise)}</Text>
+                  <Text variant="subheading" color={done ? t.successText : t.text}>{formatPaise(o.payoutPaise)}</Text>
                   <Badge label={o.status.toLowerCase().replace('_', ' ')} tone={done ? 'success' : 'neutral'} />
                 </View>
               </Row>

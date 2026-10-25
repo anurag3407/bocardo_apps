@@ -30,11 +30,11 @@ export function MenuItemRow({ item, quantity, disabled, onAdd, onRemove }: { ite
             </View>
           ) : quantity > 0 ? (
             <View style={[styles.action, styles.stepper, { backgroundColor: t.brand }, elevation(2, t)]}>
-              <Pressable onPress={onRemove} hitSlop={10} accessibilityLabel={`Remove one ${item.name}`}>
+              <Pressable onPress={onRemove} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Remove one ${item.name}`}>
                 <Icon name="remove" size={18} color={t.textInverse} />
               </Pressable>
               <Text variant="subheading" color={t.textInverse} style={{ fontWeight: '800' }}>{quantity}</Text>
-              <Pressable onPress={onAdd} hitSlop={10} accessibilityLabel={`Add one ${item.name}`}>
+              <Pressable onPress={onAdd} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Add one ${item.name}`}>
                 <Icon name="add" size={18} color={t.textInverse} />
               </Pressable>
             </View>
@@ -43,6 +43,8 @@ export function MenuItemRow({ item, quantity, disabled, onAdd, onRemove }: { ite
               onPress={onAdd}
               disabled={unavailable}
               style={({ pressed }) => [styles.action, { backgroundColor: t.surfaceRaised, borderColor: t.border, borderWidth: 1, opacity: unavailable ? 0.5 : pressed ? 0.8 : 1 }, elevation(2, t)]}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: unavailable }}
               accessibilityLabel={`Add ${item.name}`}>
               <Text variant="subheading" color={t.brandText} style={{ fontWeight: '800', letterSpacing: 0.5 }}>ADD</Text>
               <Icon name="add" size={14} color={t.brandText} />

@@ -24,7 +24,7 @@ export function HistoryScreen() {
                 name={o.status === 'DELIVERED' ? 'checkmark-done' : 'close'}
                 size={40}
                 background={o.status === 'DELIVERED' ? t.successSoft : t.dangerSoft}
-                color={o.status === 'DELIVERED' ? t.success : t.danger}
+                color={o.status === 'DELIVERED' ? t.successText : t.dangerText}
               />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text variant="subheading">#{o.shortCode} · {o.customerName}</Text>

@@ -26,8 +26,11 @@ export function Button({ title, kind = 'primary', loading, disabled, size = 'md'
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={title}
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       disabled={inactive}
+      // the small variant is 36pt tall; the slop brings the touch target to 44pt
+      hitSlop={size === 'sm' ? { top: 4, bottom: 4 } : undefined}
       style={({ pressed }) => [
         styles.base,
         { backgroundColor: bg, minHeight: height, paddingHorizontal: size === 'sm' ? spacing.md : spacing.lg, borderRadius: size === 'sm' ? radius.sm : radius.md },

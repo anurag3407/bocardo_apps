@@ -88,7 +88,7 @@ export function RestaurantScreen() {
               </View>
               <View style={[styles.dashed, { borderColor: t.border }]} />
               <View style={{ gap: spacing.sm }}>
-                {r.etaMinutes ? <Fact icon="time" color={t.success} text={`${r.etaMinutes} min delivery`} /> : null}
+                {r.etaMinutes ? <Fact icon="time" color={t.successText} text={`${r.etaMinutes} min delivery`} /> : null}
                 <Fact icon="location" color={t.brandText} text={[r.distanceM !== null && r.distanceM !== undefined ? formatDistance(r.distanceM) : null, r.addressLine].filter(Boolean).join(' · ')} />
                 {r.minOrderPaise > 0 ? <Fact icon="bag-handle" color={t.textMuted} text={`Minimum order ${formatPaise(r.minOrderPaise)}`} /> : null}
                 {r.isVegOnly ? <Fact icon="leaf" color={t.veg} text="Pure vegetarian kitchen" /> : null}
@@ -97,8 +97,8 @@ export function RestaurantScreen() {
 
             {notice ? (
               <View style={[styles.notice, { backgroundColor: t.dangerSoft }]}>
-                <Icon name="alert-circle" size={20} color={t.danger} />
-                <Text color={t.danger} style={{ flex: 1 }}>{notice}</Text>
+                <Icon name="alert-circle" size={20} color={t.dangerText} />
+                <Text color={t.dangerText} style={{ flex: 1 }}>{notice}</Text>
               </View>
             ) : null}
 

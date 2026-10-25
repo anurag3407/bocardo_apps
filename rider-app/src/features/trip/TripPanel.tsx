@@ -142,11 +142,11 @@ export function TripPanel({ order: o }: { order: RiderOrder }) {
             <Text variant="caption" muted>{toRestaurant ? o.restaurant.addressLine : [o.dropAddress.line1, o.dropAddress.line2, o.dropAddress.landmark].filter(Boolean).join(', ')}</Text>
           </View>
           {/* masked call: the customer's number is never shown to the rider */}
-          <IconButton name="call" label={toRestaurant ? 'Call restaurant' : 'Call customer'} onPress={() => void startCall(o.id, toRestaurant ? 'restaurant' : 'customer')} size={44} background={t.successSoft} color={t.success} />
+          <IconButton name="call" label={toRestaurant ? 'Call restaurant' : 'Call customer'} onPress={() => void startCall(o.id, toRestaurant ? 'restaurant' : 'customer')} size={44} background={t.successSoft} color={t.successText} />
         </Row>
         {!toRestaurant && o.customerNote ? (
           <Row gap={spacing.sm} style={[styles.note, { backgroundColor: t.sunSoft }]}>
-            <Icon name="document-text" size={16} color={t.warning} />
+            <Icon name="document-text" size={16} color={t.warningText} />
             <Text variant="label" style={{ flex: 1 }}>{o.customerNote}</Text>
           </Row>
         ) : null}
@@ -169,8 +169,8 @@ export function TripPanel({ order: o }: { order: RiderOrder }) {
               </Row>
             ))}
             <Row gap={spacing.sm} style={{ marginTop: spacing.xs }}>
-              <Icon name={o.status === 'READY' ? 'checkmark-circle' : 'flame'} size={16} color={o.status === 'READY' ? t.success : t.warning} />
-              <Text variant="caption" color={o.status === 'READY' ? t.success : t.warning}>{o.status === 'READY' ? 'Restaurant marked the order ready' : 'Food is still being prepared'}</Text>
+              <Icon name={o.status === 'READY' ? 'checkmark-circle' : 'flame'} size={16} color={o.status === 'READY' ? t.successText : t.warningText} />
+              <Text variant="caption" color={o.status === 'READY' ? t.successText : t.warningText}>{o.status === 'READY' ? 'Restaurant marked the order ready' : 'Food is still being prepared'}</Text>
             </Row>
           </Card>
           <Button title="Picked up" icon="bag-check" size="lg" loading={busy} onPress={confirmPickup} />
@@ -183,7 +183,7 @@ export function TripPanel({ order: o }: { order: RiderOrder }) {
         <Card style={{ gap: spacing.lg }}>
           {o.paymentMethod === 'cod' ? (
             <Row gap={spacing.sm} style={[styles.note, { backgroundColor: t.sunSoft }]}>
-              <Icon name="cash" size={20} color={t.warning} />
+              <Icon name="cash" size={20} color={t.warningText} />
               <Text variant="heading" style={{ flex: 1 }}>Collect {formatPaise(o.collectPaise)} in cash</Text>
             </Row>
           ) : null}
@@ -221,7 +221,7 @@ export function TripPanel({ order: o }: { order: RiderOrder }) {
 
       <Row gap={spacing.md}>
         <Row gap={spacing.sm} style={[styles.earn, { backgroundColor: t.limeSoft }]}>
-          <Icon name="wallet" size={18} color={t.success} />
+          <Icon name="wallet" size={18} color={t.successText} />
           <Text variant="label">You earn {formatPaise(o.payoutPaise)} on this trip</Text>
         </Row>
         <Button title="SOS" icon="warning" kind="danger" onPress={sos} />

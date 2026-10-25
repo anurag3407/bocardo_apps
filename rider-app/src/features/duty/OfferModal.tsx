@@ -89,13 +89,13 @@ export function OfferModal({ offer, onResolved }: { offer: RiderOffer; onResolve
           </Card>
           {offer.isCod ? (
             <Row gap={spacing.sm} style={[styles.payment, { backgroundColor: t.sunSoft }]}>
-              <Icon name="cash" size={20} color={t.warning} />
+              <Icon name="cash" size={20} color={t.warningText} />
               <Text variant="subheading" style={{ flex: 1 }}>Collect {formatPaise(offer.collectPaise)} in cash</Text>
             </Row>
           ) : (
             <Row gap={spacing.sm} style={[styles.payment, { backgroundColor: t.successSoft }]}>
-              <Icon name="checkmark-circle" size={20} color={t.success} />
-              <Text variant="subheading" color={t.success} style={{ flex: 1 }}>Prepaid order — no cash to collect</Text>
+              <Icon name="checkmark-circle" size={20} color={t.successText} />
+              <Text variant="subheading" color={t.successText} style={{ flex: 1 }}>Prepaid order — no cash to collect</Text>
             </Row>
           )}
         </View>

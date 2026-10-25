@@ -131,7 +131,7 @@ export function CheckoutScreen() {
           </Row>
         ))}
         <Divider />
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button">
           <Row gap={spacing.xs}>
             <Icon name="add-circle" size={18} color={t.brandText} />
             <Text variant="label" color={t.brandText}>Add more items</Text>
@@ -143,8 +143,8 @@ export function CheckoutScreen() {
         <Card variant="outlined" style={{ backgroundColor: t.dangerSoft, borderColor: t.danger, gap: spacing.sm }}>
           {issues.map((i, idx) => (
             <Row key={idx} gap={spacing.sm}>
-              <Icon name="alert-circle" size={16} color={t.danger} />
-              <Text color={t.danger} style={{ flex: 1 }}>{i.message}</Text>
+              <Icon name="alert-circle" size={16} color={t.dangerText} />
+              <Text color={t.dangerText} style={{ flex: 1 }}>{i.message}</Text>
             </Row>
           ))}
           <Button title="Remove unavailable items" kind="danger" size="sm" onPress={() => cart.removeItems(issues.map((i) => i.menuItemId))} />
@@ -153,14 +153,14 @@ export function CheckoutScreen() {
       {quote.error && !issues.length ? (
         <Card variant="outlined" style={{ backgroundColor: t.dangerSoft, borderColor: t.danger }}>
           <Row gap={spacing.sm}>
-            <Icon name="alert-circle" size={16} color={t.danger} />
-            <Text color={t.danger} style={{ flex: 1 }}>{errorMessage(quote.error)}</Text>
+            <Icon name="alert-circle" size={16} color={t.dangerText} />
+            <Text color={t.dangerText} style={{ flex: 1 }}>{errorMessage(quote.error)}</Text>
           </Row>
         </Card>
       ) : null}
       {quote.data?.warnings.map((w, i) => (
         <Row key={i} gap={spacing.sm} style={[styles.warning, { backgroundColor: t.warningSoft }]}>
-          <Icon name="trending-up" size={16} color={t.warning} />
+          <Icon name="trending-up" size={16} color={t.warningText} />
           <Text variant="caption" color={t.text} style={{ flex: 1 }}>{w.message}: {formatPaise(w.previousPaise)} → {formatPaise(w.currentPaise)}</Text>
         </Row>
       ))}
@@ -176,6 +176,7 @@ export function CheckoutScreen() {
               value={couponInput}
               onChangeText={(v) => setCouponInput(v.toUpperCase())}
               placeholder="Enter coupon code"
+              accessibilityLabel="Coupon code"
               icon="ticket-outline"
               autoCapitalize="characters"
               editable={!cart.couponCode}
@@ -190,8 +191,8 @@ export function CheckoutScreen() {
         </Row>
         {cart.couponCode && quote.data?.pricing.discountPaise ? (
           <Row gap={spacing.sm} style={[styles.saved, { backgroundColor: t.limeSoft }]}>
-            <Icon name="checkmark-circle" size={18} color={t.success} />
-            <Text variant="label" color={t.success}>You save {formatPaise(quote.data.pricing.discountPaise)} with {cart.couponCode}</Text>
+            <Icon name="checkmark-circle" size={18} color={t.successText} />
+            <Text variant="label" color={t.successText}>You save {formatPaise(quote.data.pricing.discountPaise)} with {cart.couponCode}</Text>
           </Row>
         ) : null}
       </Card>
@@ -224,7 +225,7 @@ export function CheckoutScreen() {
 
       <Card style={{ gap: spacing.md }}>
         <Row gap={spacing.sm}>
-          <Icon name="heart" size={18} color={t.danger} />
+          <Icon name="heart" size={18} color={t.dangerText} />
           <View style={{ flex: 1 }}>
             <Text variant="heading">Tip your delivery partner</Text>
             <Text variant="caption" muted>100% of the tip goes to them</Text>
@@ -242,7 +243,7 @@ export function CheckoutScreen() {
           <Icon name="create" size={18} color={t.brandText} />
           <Text variant="heading">Cooking & delivery instructions</Text>
         </Row>
-        <Input value={customerNote} onChangeText={setCustomerNote} placeholder="e.g. Less spicy, leave at door, gate code 4B" maxLength={300} multiline />
+        <Input value={customerNote} onChangeText={setCustomerNote} placeholder="e.g. Less spicy, leave at door, gate code 4B" accessibilityLabel="Cooking and delivery instructions" maxLength={300} multiline />
       </Card>
 
       {quote.data ? <BillCard pricing={quote.data.pricing} /> : null}
@@ -276,7 +277,7 @@ function BillCard({ pricing: p }: { pricing: PriceBreakdown }) {
     opts.hideZero && !paise ? null : (
       <Row justify="space-between" key={label}>
         <Text muted>{label}</Text>
-        <Text color={opts.negative ? t.success : undefined}>{opts.negative ? '−' : ''}{formatPaise(paise)}</Text>
+        <Text color={opts.negative ? t.successText : undefined}>{opts.negative ? '−' : ''}{formatPaise(paise)}</Text>
       </Row>
     );
   return (
@@ -292,7 +293,7 @@ function BillCard({ pricing: p }: { pricing: PriceBreakdown }) {
           <Text muted>Delivery fee</Text>
           <Row gap={6}>
             <Text subtle style={{ textDecorationLine: 'line-through' }}>{formatPaise(p.deliveryFeeWaivedPaise)}</Text>
-            <Text color={t.success} style={{ fontWeight: '700' }}>FREE</Text>
+            <Text color={t.successText} style={{ fontWeight: '700' }}>FREE</Text>
           </Row>
         </Row>
       ) : (
@@ -316,11 +317,11 @@ function Stepper({ value, onChange }: { value: number; onChange: (n: number) => 
   const t = useTheme();
   return (
     <View style={[styles.stepper, { borderColor: t.border, backgroundColor: t.surfaceRaised }]}>
-      <Pressable onPress={() => onChange(value - 1)} hitSlop={8} accessibilityLabel="Decrease quantity">
+      <Pressable onPress={() => onChange(value - 1)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Decrease quantity">
         <Icon name={value === 1 ? 'trash-outline' : 'remove'} size={16} color={t.brandText} />
       </Pressable>
-      <Text variant="subheading" color={t.brandText} style={{ fontWeight: '800', minWidth: 14, textAlign: 'center' }}>{value}</Text>
-      <Pressable onPress={() => onChange(value + 1)} hitSlop={8} accessibilityLabel="Increase quantity">
+      <Text variant="subheading" color={t.brandText} style={{ fontWeight: '800', minWidth: 14, textAlign: 'center' }} accessibilityLabel={`Quantity ${value}`}>{value}</Text>
+      <Pressable onPress={() => onChange(value + 1)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Increase quantity">
         <Icon name="add" size={16} color={t.brandText} />
       </Pressable>
     </View>

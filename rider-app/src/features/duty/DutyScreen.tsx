@@ -106,7 +106,7 @@ export function DutyScreen() {
             {hasTrip ? 'Finish the trip to go offline' : online ? 'You will receive delivery requests' : 'Go online to start earning'}
           </Text>
         </View>
-        <Toggle value={online} disabled={toggling || hasTrip} onValueChange={toggle} tone="success" />
+        <Toggle value={online} disabled={toggling || hasTrip} onValueChange={toggle} tone="success" accessibilityLabel="Available for delivery orders" />
       </View>
 
       <PowerSetupCard />
@@ -114,7 +114,7 @@ export function DutyScreen() {
       <Card style={{ gap: spacing.sm }}>
         <Row justify="space-between">
           <Row gap={spacing.sm}>
-            <Icon name="cash" size={18} color={cashNearLimit ? t.danger : t.success} />
+            <Icon name="cash" size={18} color={cashNearLimit ? t.dangerText : t.successText} />
             <Text variant="subheading">Cash in hand</Text>
           </Row>
           <Text variant="subheading">{formatPaise(rider.cashInHandPaise)} <Text variant="caption" muted>/ {formatPaise(rider.cashLimitPaise)}</Text></Text>
@@ -122,7 +122,7 @@ export function DutyScreen() {
         <View style={[styles.track, { backgroundColor: t.surface }]}>
           <View style={[styles.fill, { width: `${Math.round(cashShare * 100)}%`, backgroundColor: cashNearLimit ? t.danger : t.success }]} />
         </View>
-        {cashNearLimit ? <Text variant="caption" color={t.danger}>Deposit at a hub to keep getting cash orders.</Text> : null}
+        {cashNearLimit ? <Text variant="caption" color={t.dangerText}>Deposit at a hub to keep getting cash orders.</Text> : null}
       </Card>
 
       {online && hasTrip ? <TripPanel order={active.data!.order!} /> : null}

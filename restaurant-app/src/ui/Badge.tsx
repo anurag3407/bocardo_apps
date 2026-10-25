@@ -5,13 +5,13 @@ import { radius, spacing, useTheme, type ThemeColors } from './theme';
 
 export type Tone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'lime' | 'sun';
 
-export function toneColors(t: ThemeColors, tone: Tone): { fg: string; bg: string } {
+export function toneColors(t: ThemeColors, tone: Tone): { fg: string; bg: string; fill?: string } {
   return {
     neutral: { fg: t.textMuted, bg: t.surface },
-    brand: { fg: t.brandText, bg: t.brandSoft },
-    success: { fg: t.success, bg: t.successSoft },
-    warning: { fg: t.warning, bg: t.warningSoft },
-    danger: { fg: t.danger, bg: t.dangerSoft },
+    brand: { fg: t.brandText, bg: t.brandSoft, fill: t.brand },
+    success: { fg: t.successText, bg: t.successSoft, fill: t.success },
+    warning: { fg: t.warningText, bg: t.warningSoft, fill: t.warning },
+    danger: { fg: t.dangerText, bg: t.dangerSoft, fill: t.danger },
     lime: { fg: t.ink, bg: t.lime },
     sun: { fg: t.ink, bg: t.sun },
   }[tone];
@@ -23,7 +23,7 @@ export function Badge({ label, tone = 'neutral', icon, solid }: { label: string;
   const c = toneColors(t, tone);
   const fg = solid ? t.textInverse : c.fg;
   return (
-    <View style={[styles.badge, { backgroundColor: solid ? c.fg : c.bg }]}>
+    <View style={[styles.badge, { backgroundColor: solid ? (c.fill ?? c.fg) : c.bg }]}>
       {icon ? <Icon name={icon} size={12} color={fg} /> : null}
       <Text variant="caption" color={fg} style={{ fontWeight: '700' }} numberOfLines={1}>{label}</Text>
     </View>
@@ -34,7 +34,7 @@ export function Badge({ label, tone = 'neutral', icon, solid }: { label: string;
 export function RatingBadge({ value, count, size = 'md' }: { value: number; count?: number; size?: 'sm' | 'md' }) {
   const t = useTheme();
   return (
-    <View style={[styles.rating, { backgroundColor: t.rating }, size === 'sm' && { paddingHorizontal: 5, paddingVertical: 1 }]} accessibilityLabel={`Rated ${value.toFixed(1)}`}>
+    <View accessible style={[styles.rating, { backgroundColor: t.rating }, size === 'sm' && { paddingHorizontal: 5, paddingVertical: 1 }]} accessibilityLabel={`Rated ${value.toFixed(1)}${count !== undefined ? ` from ${count} ratings` : ''}`}>
       <Text variant="caption" color={t.textInverse} style={{ fontWeight: '800' }}>{value.toFixed(1)}</Text>
       <Icon name="star" size={size === 'sm' ? 9 : 10} color={t.textInverse} />
       {count !== undefined ? <Text variant="caption" color={t.textInverse} style={{ opacity: 0.85 }}> · {count}</Text> : null}
@@ -47,7 +47,7 @@ export function VegMark({ veg }: { veg: boolean }) {
   const t = useTheme();
   const color = veg ? t.veg : t.nonVeg;
   return (
-    <View accessibilityLabel={veg ? 'Vegetarian' : 'Non-vegetarian'} style={[styles.mark, { borderColor: color }]}>
+    <View accessible accessibilityLabel={veg ? 'Vegetarian' : 'Non-vegetarian'} style={[styles.mark, { borderColor: color }]}>
       {veg ? (
         <View style={[styles.dot, { backgroundColor: color }]} />
       ) : (

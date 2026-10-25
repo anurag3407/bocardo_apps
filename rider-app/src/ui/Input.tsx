@@ -22,11 +22,15 @@ export function Input({ label, error, hint, icon, prefix, style, onFocus, onBlur
       {label ? <Text variant="label" muted>{label}</Text> : null}
       <View style={[styles.field, { borderColor, backgroundColor: focused ? t.surfaceRaised : t.surface }, multiline && styles.multiline]}>
         {icon ? <Icon name={icon} size={18} color={focused ? t.brandText : t.textSubtle} /> : null}
-        {prefix ? <Text variant="subheading" style={{ marginRight: -spacing.xs }}>{prefix}</Text> : null}
+        {prefix ? (
+          <Text variant="subheading" style={{ marginRight: -spacing.xs }} accessible={false} importantForAccessibility="no">{prefix}</Text>
+        ) : null}
         <TextInput
           placeholderTextColor={t.textSubtle}
           selectionColor={t.brand}
           multiline={multiline}
+          accessibilityLabel={label ? (prefix ? `${label}, ${prefix}` : label) : undefined}
+          accessibilityHint={error ?? hint}
           onFocus={(e) => {
             setFocused(true);
             onFocus?.(e);
@@ -40,9 +44,9 @@ export function Input({ label, error, hint, icon, prefix, style, onFocus, onBlur
         />
       </View>
       {error ? (
-        <View style={styles.message}>
-          <Icon name="alert-circle" size={14} color={t.danger} />
-          <Text variant="caption" color={t.danger} style={{ flex: 1 }}>{error}</Text>
+        <View style={styles.message} accessibilityLiveRegion="polite" accessibilityRole="alert">
+          <Icon name="alert-circle" size={14} color={t.dangerText} />
+          <Text variant="caption" color={t.dangerText} style={{ flex: 1 }}>{error}</Text>
         </View>
       ) : hint ? (
         <Text variant="caption" subtle>{hint}</Text>

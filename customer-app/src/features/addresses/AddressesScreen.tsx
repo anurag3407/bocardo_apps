@@ -85,7 +85,7 @@ export function AddressesScreen() {
                 <Text muted>{[a.line1, a.line2, a.landmark].filter(Boolean).join(', ')}</Text>
                 <Text variant="caption" subtle>{[a.city, a.pincode].filter(Boolean).join(' ')}</Text>
               </View>
-              {!pick ? <IconButton name="trash-outline" label="Delete address" onPress={() => remove(a.id)} size={36} color={t.danger} background={t.dangerSoft} /> : null}
+              {!pick ? <IconButton name="trash-outline" label="Delete address" onPress={() => remove(a.id)} size={36} color={t.dangerText} background={t.dangerSoft} /> : null}
             </Row>
           </Card>
         )}

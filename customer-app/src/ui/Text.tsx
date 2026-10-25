@@ -22,10 +22,14 @@ export interface AppTextProps extends TextProps {
   center?: boolean;
 }
 
-export function Text({ variant = 'body', muted, subtle, color, center, style, ...rest }: AppTextProps) {
+/** Screen-reader headings: lets VoiceOver/TalkBack jump between sections. */
+const HEADING_VARIANTS = new Set<Variant>(['display', 'title', 'heading']);
+
+export function Text({ variant = 'body', muted, subtle, color, center, style, accessibilityRole, ...rest }: AppTextProps) {
   const theme = useTheme();
   return (
     <RNText
+      accessibilityRole={accessibilityRole ?? (HEADING_VARIANTS.has(variant) ? 'header' : undefined)}
       {...rest}
       style={[variants[variant], { color: color ?? (subtle ? theme.textSubtle : muted ? theme.textMuted : theme.text) }, center && { textAlign: 'center' }, style]}
     />

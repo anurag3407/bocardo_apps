@@ -82,8 +82,8 @@ export function MenuScreen() {
                 </Row>
               </View>
               <View style={{ alignItems: 'center', gap: 2 }}>
-                <Toggle value={item.inStock} onValueChange={(v) => setStock('item', item.id, v)} tone="success" />
-                <Text variant="caption" color={item.inStock ? t.success : t.danger} style={{ fontSize: 10, fontWeight: '700' }}>{item.inStock ? 'IN STOCK' : 'SOLD OUT'}</Text>
+                <Toggle value={item.inStock} onValueChange={(v) => setStock('item', item.id, v)} tone="success" accessibilityLabel={`${item.name} in stock`} />
+                <Text variant="caption" color={item.inStock ? t.successText : t.dangerText} style={{ fontSize: 10, fontWeight: '700' }}>{item.inStock ? 'IN STOCK' : 'SOLD OUT'}</Text>
               </View>
             </Row>
             {item.variants.length || item.addonGroups.length ? (
@@ -91,13 +91,13 @@ export function MenuScreen() {
                 {item.variants.map((v) => (
                   <Row key={v.id} justify="space-between">
                     <Text variant="label" muted style={{ flex: 1 }}>{v.name} · {formatPaise(v.pricePaise)}</Text>
-                    <Toggle value={v.inStock} onValueChange={(val) => setStock('variant', v.id, val)} tone="success" />
+                    <Toggle value={v.inStock} onValueChange={(val) => setStock('variant', v.id, val)} tone="success" accessibilityLabel={`${v.name} in stock`} />
                   </Row>
                 ))}
                 {item.addonGroups.flatMap((g) => g.addons).map((a) => (
                   <Row key={a.id} justify="space-between">
                     <Text variant="label" muted style={{ flex: 1 }}>+ {a.name}</Text>
-                    <Toggle value={a.inStock} onValueChange={(val) => setStock('addon', a.id, val)} tone="success" />
+                    <Toggle value={a.inStock} onValueChange={(val) => setStock('addon', a.id, val)} tone="success" accessibilityLabel={`${a.name} in stock`} />
                   </Row>
                 ))}
               </View>
@@ -109,7 +109,7 @@ export function MenuScreen() {
             <Card style={{ gap: spacing.md, marginTop: spacing.xl }}>
               <Text variant="heading">New category</Text>
               <Row style={{ alignItems: 'flex-start' }}>
-                <View style={{ flex: 1 }}><Input placeholder="e.g. Starters, Desserts" icon="folder-open-outline" value={newCategory} onChangeText={setNewCategory} /></View>
+                <View style={{ flex: 1 }}><Input placeholder="e.g. Starters, Desserts" icon="folder-open-outline" accessibilityLabel="New category name" value={newCategory} onChangeText={setNewCategory} /></View>
                 <Button title="Add" kind="secondary" onPress={addCategory} style={{ minHeight: 52 }} />
               </Row>
             </Card>

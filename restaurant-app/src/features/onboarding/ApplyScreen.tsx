@@ -73,8 +73,8 @@ export function ApplyScreen() {
         <Button title={pin ? 'Re-capture location' : 'Use current location'} icon="locate" kind="secondary" onPress={locate} />
         {pin ? (
           <Row gap={spacing.sm}>
-            <Icon name="checkmark-circle" size={16} color={t.success} />
-            <Text variant="caption" color={t.success}>Outlet location pinned</Text>
+            <Icon name="checkmark-circle" size={16} color={t.successText} />
+            <Text variant="caption" color={t.successText}>Outlet location pinned</Text>
           </Row>
         ) : (
           <Text variant="caption" muted>Capture this while you are at the restaurant.</Text>
