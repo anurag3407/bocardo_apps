@@ -1,0 +1,122 @@
+# Push to main → test on GitHub's machines → build and blue-green release ON the VPS.
+#
+# The deploy job runs on a self-hosted runner installed on the VPS (deploy/scripts/install-runner.sh).
+# The runner polls GitHub over outbound HTTPS, so nothing connects to the VPS on port 22 and your
+# own network's firewall does not matter. Setup: docs/deployment-vps.md.
+name: API · deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "!api/**/*.md"
+      - "deploy/**"
+      - "!deploy/**/*.md"
+      - ".github/workflows/api-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to deploy (blank = latest main)"
+        required: false
+        default: ""
+
+# Releases queue up instead of cancelling each other half-way.
+concurrency:
+  group: api-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck · lint · unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: api/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+
+  # Opt-in: set the repository variable RUN_DB_MIGRATIONS=true and the SUPABASE_DB_URL secret.
+  # Runs before the new code goes live, so migrations must be backward compatible (expand → contract).
+  migrate:
+    name: Database migrations
+    needs: verify
+    if: vars.RUN_DB_MIGRATIONS == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: supabase db push
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "::error::SUPABASE_DB_URL secret is not set"; exit 1; }
+          supabase db push --db-url "$SUPABASE_DB_URL"
+
+  deploy:
+    name: Build & release on VPS
+    needs: [verify, migrate]
+    if: ${{ !cancelled() && needs.verify.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.migrate.result) }}
+    runs-on: [self-hosted, linux, bocardo-prod]
+    environment:
+      name: production
+      url: https://${{ vars.API_DOMAIN }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          clean: true
+
+      - name: Write host config from secrets
+        env:
+          API_ENV_FILE: ${{ secrets.API_ENV_FILE }}
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+          ACME_EMAIL: ${{ vars.ACME_EMAIL }}
+          API_REPLICAS: ${{ vars.API_REPLICAS }}
+          API_MEMORY_LIMIT: ${{ vars.API_MEMORY_LIMIT }}
+          API_CPUS: ${{ vars.API_CPUS }}
+          API_HEAP_MB: ${{ vars.API_HEAP_MB }}
+          DRAIN_SECONDS: ${{ vars.DRAIN_SECONDS }}
+        run: deploy/scripts/write-config.sh
+
+      - name: Blue-green release
+        run: deploy/scripts/deploy.sh --sha "$(git rev-parse HEAD)"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### API release"
+            echo
+            echo '```'
+            deploy/scripts/status.sh 2>&1 | sed -n '1,20p'
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"

@@ -72,4 +72,5 @@ cd <each app> && pnpm typecheck && pnpm lint
 cd admin-panel && pnpm build
 ```
 
-Read [docs/architecture.md](docs/architecture.md) first.
+Read [docs/architecture.md](docs/architecture.md) first. Production deploys (push-to-deploy on a VPS,
+blue-green, zero downtime): [docs/deployment-vps.md](docs/deployment-vps.md).

@@ -1,6 +1,11 @@
 node_modules
 dist
 .env
+.env.*
 coverage
 supabase
 test
+.git
+*.md
+openapi.json
+firebase-service-account*.json

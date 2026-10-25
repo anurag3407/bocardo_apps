@@ -1,0 +1,90 @@
+# Day-2 operations from the Actions tab, so the VPS can be managed without SSH.
+#   status    what is live, health, release history, disk
+#   rollback  re-release the previous image (or `release`) — blue-green, ~30 s, no rebuild
+#   redeploy  re-release the current image with fresh secrets/variables (e.g. after editing API_ENV_FILE)
+#   logs      recent API logs (refused on public repositories: Actions logs are world-readable)
+name: API · ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Operation
+        type: choice
+        options: [status, rollback, redeploy, logs]
+        default: status
+      release:
+        description: "rollback only: image tag to return to (blank = previous release)"
+        required: false
+        default: ""
+      lines:
+        description: "logs only: lines per container"
+        required: false
+        default: "200"
+
+concurrency:
+  group: api-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ops:
+    name: ${{ inputs.action }}
+    runs-on: [self-hosted, linux, bocardo-prod]
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: status
+        if: inputs.action == 'status'
+        run: deploy/scripts/status.sh
+
+      - name: rollback
+        if: inputs.action == 'rollback'
+        env:
+          RELEASE: ${{ inputs.release }}
+        run: deploy/scripts/rollback.sh $RELEASE
+
+      - name: Write host config from secrets
+        if: inputs.action == 'redeploy'
+        env:
+          API_ENV_FILE: ${{ secrets.API_ENV_FILE }}
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+          ACME_EMAIL: ${{ vars.ACME_EMAIL }}
+          API_REPLICAS: ${{ vars.API_REPLICAS }}
+          API_MEMORY_LIMIT: ${{ vars.API_MEMORY_LIMIT }}
+          API_CPUS: ${{ vars.API_CPUS }}
+          API_HEAP_MB: ${{ vars.API_HEAP_MB }}
+          DRAIN_SECONDS: ${{ vars.DRAIN_SECONDS }}
+        run: deploy/scripts/write-config.sh
+
+      - name: redeploy
+        if: inputs.action == 'redeploy'
+        run: |
+          live="$(cat /opt/bocardo/state/active_color 2>/dev/null || echo none)"
+          tag="$(cat "/opt/bocardo/state/release-$live" 2>/dev/null || true)"
+          test -n "$tag" || { echo "::error::nothing is live yet; push to main to deploy"; exit 1; }
+          deploy/scripts/deploy.sh --image-tag "$tag"
+
+      - name: logs
+        if: inputs.action == 'logs'
+        env:
+          LINES: ${{ inputs.lines }}
+          PRIVATE_REPO: ${{ github.event.repository.private }}
+        run: |
+          if [ "$PRIVATE_REPO" != "true" ]; then
+            echo "::error::refusing to print logs (IPs, request paths) into a public repository's Actions log"
+            exit 1
+          fi
+          case "$LINES" in ''|*[!0-9]*) LINES=200 ;; esac
+          live="$(cat /opt/bocardo/state/active_color 2>/dev/null || echo none)"
+          for c in $(docker ps --filter "label=com.docker.compose.project=bocardo-$live" --format '{{.Names}}'); do
+            echo "::group::$c"
+            docker logs --tail "$LINES" "$c" 2>&1
+            echo "::endgroup::"
+          done

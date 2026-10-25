@@ -52,8 +52,9 @@ Indian operators silently drop SMS that are not DLT-registered. One-time, takes 
    Further admins are granted from the console (Settings).
 
 ## Deploy
-* **API**: `api/Dockerfile` → Fly.io / Railway / Render / ECS. Stateless; scale horizontally.
-  Health: `/health` (liveness), `/health/ready` (readiness, 503 if DB down).
+* **API**: push to `main` → GitHub Actions builds `api/Dockerfile` on the VPS and releases it blue-green
+  with zero downtime; rollback/redeploy/status from Actions → *API · ops*. Setup and operations:
+  [deployment-vps.md](deployment-vps.md). Stateless; scale horizontally. Health: `/health` (liveness), `/health/ready` (readiness, 503 if DB down).
   QStash must reach `{API_PUBLIC_URL}/internal/jobs/:name`.
 * **Admin**: Vercel (`admin-panel`), env from `.env.example`.
 * **Mobile**: `eas build --profile production` per app; JS-only fixes via `eas update`.

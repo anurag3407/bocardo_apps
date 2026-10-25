@@ -1,0 +1,41 @@
+# The only container with public ports. It stays up across releases; deploy.sh points it at the
+# live colour by rewriting $BOCARDO_HOME/caddy/upstreams/api.caddy and running `caddy reload`,
+# which swaps config without dropping connections.
+#
+# The whole caddy/ directory is mounted (not single files) so atomic `mv` replacements are visible
+# inside the container.
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: bocardo-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ${BOCARDO_HOME:-/opt/bocardo}/caddy:/etc/caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+volumes:
+  # TLS certificates and ACME account; losing this re-issues certs (Let's Encrypt rate limits apply)
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+    external: true
+    name: bocardo_edge

@@ -1,0 +1,30 @@
+# Template. deploy.sh renders it to $BOCARDO_HOME/caddy/Caddyfile, filling in the domain and
+# email placeholders from the API_DOMAIN / ACME_EMAIL repository variables.
+{
+	email __ACME_EMAIL__
+	# finish in-flight requests on the old config when reloading
+	grace_period 30s
+}
+
+__API_DOMAIN__ {
+	encode zstd gzip
+
+	request_body {
+		max_size 2MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+
+	# reverse_proxy to the live colour; deploy.sh rewrites this file on every release
+	import /etc/caddy/upstreams/api.caddy
+}
