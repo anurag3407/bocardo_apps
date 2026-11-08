@@ -1,7 +1,8 @@
 import { Logger } from '@nestjs/common';
 import type { LatLng } from '../../common/utils/geo';
-import type { GeoProvider, RouteEstimate } from './geo-provider';
+import type { GeoOrigin, GeoProvider, RouteEstimate } from './geo-provider';
 import { estimate, HaversineGeoProvider } from './haversine-geo-provider';
+import { CircuitBreaker, type MapsBudget } from './maps-guard';
 
 const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 const MATRIX_API_URL = 'https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix';
@@ -32,10 +33,20 @@ interface ComputeRouteMatrixElement {
 export class GoogleGeoProvider implements GeoProvider {
   private readonly logger = new Logger(GoogleGeoProvider.name);
   private readonly fallback = new HaversineGeoProvider();
+  private readonly breaker = new CircuitBreaker();
 
-  constructor(private readonly apiKey: string) {}
+  constructor(
+    private readonly apiKey: string,
+    private readonly budget?: MapsBudget,
+  ) {}
+
+  private async mayCall(elements: number): Promise<boolean> {
+    if (this.breaker.open) return false;
+    return this.budget ? this.budget.tryConsume('routes', elements) : true;
+  }
 
   async route(from: LatLng, to: LatLng): Promise<RouteEstimate> {
+    if (!(await this.mayCall(1))) return this.fallback.route(from, to);
     try {
       const res = await fetch(ROUTES_API_URL, {
         method: 'POST',
@@ -63,30 +74,34 @@ export class GoogleGeoProvider implements GeoProvider {
 
       const data = (await res.json()) as ComputeRoutesResponse;
       const best = data.routes?.[0];
-      if (!best || best.distanceMeters == null || !best.duration) {
+      // proto3 JSON omits zero values, so a zero-length route has no distanceMeters
+      if (!best?.duration) {
         return this.fallback.route(from, to);
       }
 
+      this.breaker.success();
       return {
-        distanceM: Math.round(best.distanceMeters),
+        distanceM: Math.round(best.distanceMeters ?? 0),
         durationS: parseProtobufDuration(best.duration),
       };
     } catch (err) {
+      this.breaker.failure();
       this.logger.warn(`google route fallback: ${(err as Error).message}`);
       return this.fallback.route(from, to);
     }
   }
 
-  async etaToDestination(origins: LatLng[], destination: LatLng): Promise<RouteEstimate[]> {
+  async etaToDestination(origins: GeoOrigin[], destination: LatLng): Promise<RouteEstimate[]> {
     if (!origins.length) return [];
 
     if (origins.length > MATRIX_MAX_ORIGINS) {
-      const head = await this.etaToDestination(
-        origins.slice(0, MATRIX_MAX_ORIGINS),
-        destination,
-      );
+      const head = await this.etaToDestination(origins.slice(0, MATRIX_MAX_ORIGINS), destination);
       const tail = await this.etaToDestination(origins.slice(MATRIX_MAX_ORIGINS), destination);
       return [...head, ...tail];
+    }
+
+    if (!(await this.mayCall(origins.length))) {
+      return this.fallback.etaToDestination(origins, destination);
     }
 
     try {
@@ -95,11 +110,17 @@ export class GoogleGeoProvider implements GeoProvider {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': this.apiKey,
-          'X-Goog-FieldMask': 'originIndex,destinationIndex,status,condition,distanceMeters,duration',
+          'X-Goog-FieldMask':
+            'originIndex,destinationIndex,status,condition,distanceMeters,duration',
         },
         body: JSON.stringify({
           origins: origins.map((o) => ({
-            waypoint: { location: { latLng: { latitude: o.lat, longitude: o.lng } } },
+            waypoint: {
+              location: {
+                latLng: { latitude: o.lat, longitude: o.lng },
+                ...(o.heading != null ? { heading: Math.round(o.heading) % 360 } : {}),
+              },
+            },
           })),
           destinations: [
             {
@@ -117,12 +138,13 @@ export class GoogleGeoProvider implements GeoProvider {
       if (!res.ok) throw new Error(`google route matrix HTTP ${res.status}`);
 
       const elements = (await res.json()) as ComputeRouteMatrixElement[];
+      this.breaker.success();
       const resultMap = new Map<number, RouteEstimate>();
 
       for (const el of elements) {
-        if (el.originIndex != null && el.distanceMeters != null && el.duration) {
+        if (el.originIndex != null && el.duration && !el.status?.code) {
           resultMap.set(el.originIndex, {
-            distanceM: Math.round(el.distanceMeters),
+            distanceM: Math.round(el.distanceMeters ?? 0),
             durationS: parseProtobufDuration(el.duration),
           });
         }
@@ -133,6 +155,7 @@ export class GoogleGeoProvider implements GeoProvider {
         return found ?? estimate(o, destination);
       });
     } catch (err) {
+      this.breaker.failure();
       this.logger.warn(`google matrix fallback: ${(err as Error).message}`);
       return this.fallback.etaToDestination(origins, destination);
     }
@@ -159,14 +182,18 @@ export class GoogleGeoProvider implements GeoProvider {
       if (!res.ok) throw new Error(`google routes drive fallback HTTP ${res.status}`);
       const data = (await res.json()) as ComputeRoutesResponse;
       const best = data.routes?.[0];
-      if (!best || best.distanceMeters == null || !best.duration) {
+      if (!best?.duration) {
         return this.fallback.route(from, to);
       }
+      this.breaker.success();
       return {
-        distanceM: Math.round(best.distanceMeters),
+        distanceM: Math.round(best.distanceMeters ?? 0),
         durationS: parseProtobufDuration(best.duration),
       };
-    } catch {
+    } catch (err) {
+      // a rejected API key also surfaces as HTTP 400, so this path must be visible
+      this.breaker.failure();
+      this.logger.warn(`google drive fallback: ${(err as Error).message}`);
       return this.fallback.route(from, to);
     }
   }

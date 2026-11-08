@@ -36,6 +36,9 @@ export const envSchema = z
     GEO_PROVIDER: z.enum(['mapbox', 'google']).default('mapbox'),
     MAPBOX_ACCESS_TOKEN: optionalString,
     GOOGLE_MAPS_API_KEY: optionalString,
+    /** Hard daily caps on billable Google events; beyond them the API degrades to estimates. */
+    MAPS_DAILY_ROUTE_ELEMENTS: z.coerce.number().int().positive().default(10_000),
+    MAPS_DAILY_PLACES_CALLS: z.coerce.number().int().positive().default(10_000),
 
     TELEPHONY_PROVIDER: z.enum(['exotel', 'twilio', 'direct']).default('direct'),
     EXOTEL_SID: optionalString,

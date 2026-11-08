@@ -4,7 +4,8 @@ import { AppError } from '../../common/errors/app-error';
 import { haversineMeters } from '../../common/utils/geo';
 import { DB, type Db } from '../../infra/database/database';
 import type { Order } from '../../infra/database/db.types';
-import { GEO_PROVIDER, type GeoProvider } from '../../infra/geo/geo-provider';
+import { GEO_PROVIDER, type GeoProvider, type RouteEstimate } from '../../infra/geo/geo-provider';
+import { estimate } from '../../infra/geo/haversine-geo-provider';
 import { KV_STORE, type KvStore } from '../../infra/kv/kv-store';
 import { topics } from '../../infra/realtime/realtime-publisher';
 import { OutboxService } from '../../platform/outbox/outbox.service';
@@ -15,6 +16,14 @@ import { rankCandidates, riderPayoutPaise, type DispatchCandidate } from './doma
 import { RiderPool } from './rider-pool.service';
 
 const DISPATCHABLE = ['ACCEPTED', 'READY'] as const;
+/** Wide enough that busy or stale riders nearby cannot crowd out the idle ones. */
+const GEO_SEARCH_LIMIT = 200;
+/** Riders whose live position we load (two Redis reads each). */
+const LOCATED_POOL = 15;
+/** Riders priced with a paid road ETA. */
+const ROAD_ETA_CANDIDATES = 5;
+const MOVING_SPEED_MPS = 2;
+
 const attemptsKey = (orderId: string) => `dispatch:attempts:${orderId}`;
 const startLockKey = (orderId: string) => `lock:dispatch:${orderId}`;
 const assignLockKey = (orderId: string) => `lock:assign:${orderId}`;
@@ -380,7 +389,7 @@ export class DispatchService {
           pickup.lng,
           pickup.lat,
           radiusM,
-          25,
+          GEO_SEARCH_LIMIT,
         ),
         this.kv.smembers(trackingKeys.idleRiders(order.city_id)),
       ]);
@@ -398,14 +407,19 @@ export class DispatchService {
         .where('last_seen_at', '>', new Date(Date.now() - LOCATION_FRESH_MS))
         .execute();
       ids = rows
-        .filter(
-          (r) =>
-            r.last_lat !== null &&
-            r.last_lng !== null &&
-            haversineMeters(pickup, { lat: r.last_lat, lng: r.last_lng }) <= radiusM,
+        .flatMap((r) =>
+          r.last_lat !== null && r.last_lng !== null
+            ? [
+                {
+                  id: r.id,
+                  distanceM: haversineMeters(pickup, { lat: r.last_lat, lng: r.last_lng }),
+                },
+              ]
+            : [],
         )
-        .map((r) => r.id)
-        .filter((id) => !offered.has(id));
+        .filter((r) => r.distanceM <= radiusM && !offered.has(r.id))
+        .sort((a, b) => a.distanceM - b.distanceM)
+        .map((r) => r.id);
     }
     if (!ids.length) return [];
 
@@ -428,7 +442,11 @@ export class DispatchService {
     // riders already holding too much cash cannot take more COD orders
     if (order.payment_method === 'cod')
       q = q.where(sql<boolean>`cash_in_hand_paise + ${order.total_paise} <= cash_limit_paise`);
-    const riders = await q.execute();
+    // the filters above run on everyone; only the nearest eligible riders cost Redis reads
+    const nearestFirst = new Map(ids.map((id, i) => [id, i]));
+    const riders = (await q.execute())
+      .sort((a, b) => nearestFirst.get(a.id)! - nearestFirst.get(b.id)!)
+      .slice(0, LOCATED_POOL);
 
     const located = (
       await Promise.all(
@@ -457,20 +475,36 @@ export class DispatchService {
     ).filter((x): x is NonNullable<typeof x> => x !== null);
     if (!located.length) return [];
 
-    const etas = await this.geo.etaToDestination(
-      located.map((l) => l.position),
-      pickup,
-    );
-    return located.map((l, i) => ({
+    type Located = (typeof located)[number];
+    const toCandidate = (l: Located, route: RouteEstimate): DispatchCandidate => ({
       riderId: l.rider.id,
-      etaToRestaurantS: etas[i].durationS,
-      distanceToRestaurantM: etas[i].distanceM,
+      etaToRestaurantS: route.durationS,
+      distanceToRestaurantM: route.distanceM,
       idleSeconds: l.idleSeconds,
       acceptanceRate: l.rider.offers_received
         ? l.rider.offers_accepted / l.rider.offers_received
         : 1,
       ratingAvg: l.rider.rating_avg,
       ratingCount: l.rider.rating_count,
-    }));
+    });
+
+    // Rank everyone on the full score with a free estimate, then pay for road ETAs only on the
+    // finalists, so a slightly farther but far more reliable rider still gets considered.
+    const byId = new Map(located.map((l) => [l.rider.id, l]));
+    const finalists = rankCandidates(
+      located.map((l) => toCandidate(l, estimate(l.position, pickup))),
+    )
+      .slice(0, ROAD_ETA_CANDIDATES)
+      .map((c) => byId.get(c.riderId)!);
+
+    const etas = await this.geo.etaToDestination(
+      finalists.map((l) => ({
+        lat: l.position.lat,
+        lng: l.position.lng,
+        heading: (l.position.speedMps ?? 0) >= MOVING_SPEED_MPS ? l.position.heading : null,
+      })),
+      pickup,
+    );
+    return finalists.map((l, i) => toCandidate(l, etas[i]));
   }
 }

@@ -18,5 +18,5 @@ export class HaversineGeoProvider implements GeoProvider {
 
 export function estimate(from: LatLng, to: LatLng): RouteEstimate {
   const distanceM = Math.round(haversineMeters(from, to) * ROAD_FACTOR);
-  return { distanceM, durationS: Math.round(distanceM / AVG_SPEED_MPS) };
+  return { distanceM, durationS: Math.round(distanceM / AVG_SPEED_MPS), estimated: true };
 }

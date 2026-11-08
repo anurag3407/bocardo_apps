@@ -3,16 +3,18 @@ import type { LatLng } from '../../common/utils/geo';
 export interface RouteEstimate {
   distanceM: number;
   durationS: number;
+  /** True when this is a straight-line guess rather than a real road route. */
+  estimated?: boolean;
 }
 
-/**
- * Road distance/ETA. Mapbox today; a Google implementation only needs to satisfy this
- * interface and be selected with GEO_PROVIDER=google.
- */
+/** A route start; `heading` (degrees) places a moving rider on the correct side of the road. */
+export type GeoOrigin = LatLng & { heading?: number | null };
+
+/** Road distance/ETA. The adapter is selected with GEO_PROVIDER. */
 export interface GeoProvider {
   route(from: LatLng, to: LatLng): Promise<RouteEstimate>;
   /** Many origins → one destination (dispatch: every candidate rider → restaurant). */
-  etaToDestination(origins: LatLng[], destination: LatLng): Promise<RouteEstimate[]>;
+  etaToDestination(origins: GeoOrigin[], destination: LatLng): Promise<RouteEstimate[]>;
 }
 
 export const GEO_PROVIDER = Symbol('GEO_PROVIDER');

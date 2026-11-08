@@ -11,9 +11,10 @@ export interface InputProps extends TextInputProps {
   icon?: IconName;
   /** Fixed text before the value, e.g. "+91" or "₹". */
   prefix?: string;
+  trailing?: React.ReactNode;
 }
 
-export function Input({ label, error, hint, icon, prefix, style, onFocus, onBlur, multiline, ...rest }: InputProps) {
+export function Input({ label, error, hint, icon, prefix, trailing, style, onFocus, onBlur, multiline, ...rest }: InputProps) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
   const borderColor = error ? t.danger : focused ? t.brand : t.border;
@@ -42,6 +43,7 @@ export function Input({ label, error, hint, icon, prefix, style, onFocus, onBlur
           style={[styles.input, { color: t.text }, multiline && { minHeight: 88, textAlignVertical: 'top' }, style]}
           {...rest}
         />
+        {trailing}
       </View>
       {error ? (
         <View style={styles.message} accessibilityLiveRegion="polite" accessibilityRole="alert">

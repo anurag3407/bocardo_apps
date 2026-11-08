@@ -4,14 +4,17 @@ import type { App } from 'firebase-admin/app';
 import { ENV, type Env } from '../config/env';
 import { DatabaseModule } from './database/database.module';
 import { createFirebaseApp, FIREBASE_APP } from './firebase/firebase-app';
+import { CachingGeoProvider } from './geo/caching-geo-provider';
 import { GEO_PROVIDER } from './geo/geo-provider';
 import { GoogleGeoProvider } from './geo/google-geo-provider';
 import { HaversineGeoProvider } from './geo/haversine-geo-provider';
 import { MapboxGeoProvider } from './geo/mapbox-geo-provider';
+import { MapsBudget } from './geo/maps-guard';
 import { JobRegistry, JOB_SCHEDULER } from './jobs/jobs';
 import { JobsController } from './jobs/jobs.controller';
 import { LocalJobScheduler } from './jobs/local-job-scheduler';
 import { QStashJobScheduler } from './jobs/qstash-job-scheduler';
+import { KV_STORE, type KvStore } from './kv/kv-store';
 import { KvModule } from './kv/kv.module';
 import { MockPaymentProvider } from './payments/mock-payment-provider';
 import { PAYMENT_PROVIDER } from './payments/payment-provider';
@@ -117,14 +120,21 @@ const logger = new Logger('InfraModule');
     },
     {
       provide: GEO_PROVIDER,
-      inject: [ENV],
-      useFactory: (env: Env) => {
+      inject: [ENV, KV_STORE],
+      useFactory: (env: Env, kv: KvStore) => {
         if (env.GEO_PROVIDER === 'google') {
-          if (env.GOOGLE_MAPS_API_KEY) return new GoogleGeoProvider(env.GOOGLE_MAPS_API_KEY);
+          if (env.GOOGLE_MAPS_API_KEY) {
+            const budget = new MapsBudget(kv, env.MAPS_DAILY_ROUTE_ELEMENTS);
+            return new CachingGeoProvider(
+              new GoogleGeoProvider(env.GOOGLE_MAPS_API_KEY, budget),
+              kv,
+            );
+          }
           logger.warn('GOOGLE_MAPS_API_KEY not set — using straight-line distance estimates');
           return new HaversineGeoProvider();
         }
-        if (env.MAPBOX_ACCESS_TOKEN) return new MapboxGeoProvider(env.MAPBOX_ACCESS_TOKEN);
+        if (env.MAPBOX_ACCESS_TOKEN)
+          return new CachingGeoProvider(new MapboxGeoProvider(env.MAPBOX_ACCESS_TOKEN), kv);
         logger.warn('MAPBOX_ACCESS_TOKEN not set — using straight-line distance estimates');
         return new HaversineGeoProvider();
       },

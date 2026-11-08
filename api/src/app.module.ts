@@ -14,6 +14,7 @@ import { DispatchModule } from './modules/dispatch/dispatch.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { HealthModule } from './modules/health/health.module';
+import { MapsModule } from './modules/maps/maps.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { OtpModule } from './modules/otp/otp.module';
 import { PartnerModule } from './modules/partner/partner.module';
@@ -50,6 +51,7 @@ import { PlatformModule } from './platform/platform.module';
     FeedbackModule,
     CallsModule,
     AdminModule,
+    MapsModule,
   ],
   providers: [
     TokenVerifier,

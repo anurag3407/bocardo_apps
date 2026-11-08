@@ -34,6 +34,8 @@ export interface StoredQuote {
 }
 
 const QUOTE_TTL_S = 5 * 60;
+/** Road ÷ radius above this means a river or highway separates the two points. */
+const MAX_ROAD_TO_RADIUS_RATIO = 2.5;
 /** COD orders above this need online payment (fraud / rider cash risk). */
 export const COD_LIMIT_PAISE = 300_000;
 
@@ -122,6 +124,15 @@ export class QuoteService {
     }
 
     const route = await this.geo.route(restaurant, address);
+    if (
+      !route.estimated &&
+      route.distanceM > restaurant.delivery_radius_m * MAX_ROAD_TO_RADIUS_RATIO
+    ) {
+      throw AppError.unprocessable(
+        'OUT_OF_DELIVERY_RADIUS',
+        `${restaurant.name} does not deliver to this address`,
+      );
+    }
     const pricing = calculatePrice({
       lines: cart.lines,
       packagingFeePaise: restaurant.packaging_fee_paise,
