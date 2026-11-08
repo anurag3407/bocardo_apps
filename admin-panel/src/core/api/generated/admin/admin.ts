@@ -63,6 +63,7 @@ import type {
   OverviewDto,
   PayoutPageDto,
   ReassignDto,
+  RestaurantDocumentsDto,
   RestaurantStatusDto,
   RestaurantTermsDto,
   RiderKycDto,
@@ -927,6 +928,100 @@ export function useAdminAccountsRestaurant<TData = Awaited<ReturnType<typeof adm
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAdminAccountsRestaurantQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getAdminAccountsRestaurantDocumentsUrl = (id: string,) => {
+
+
+
+
+  return `/admin/restaurants/${id}/documents`
+}
+
+export const adminAccountsRestaurantDocuments = async (id: string, options?: Parameters<typeof httpClient>[1]): Promise<RestaurantDocumentsDto> => {
+
+  return httpClient<RestaurantDocumentsDto>(getAdminAccountsRestaurantDocumentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminAccountsRestaurantDocumentsQueryKey = (id: string,) => {
+    return [
+    `/admin/restaurants/${id}/documents`
+    ] as const;
+    }
+
+
+export const getAdminAccountsRestaurantDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError = ErrorType<RestaurantDocumentsDto>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminAccountsRestaurantDocumentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>> = ({ signal }) => adminAccountsRestaurantDocuments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AdminAccountsRestaurantDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>>
+export type AdminAccountsRestaurantDocumentsQueryError = ErrorType<RestaurantDocumentsDto>
+
+
+export function useAdminAccountsRestaurantDocuments<TData = Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError = ErrorType<RestaurantDocumentsDto>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminAccountsRestaurantDocuments<TData = Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError = ErrorType<RestaurantDocumentsDto>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminAccountsRestaurantDocuments<TData = Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError = ErrorType<RestaurantDocumentsDto>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAdminAccountsRestaurantDocuments<TData = Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError = ErrorType<RestaurantDocumentsDto>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRestaurantDocuments>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAdminAccountsRestaurantDocumentsQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -5,6 +5,11 @@ import { DispatchStatusSchema, OrderLineSchema, OrderStatusSchema } from '../ord
 
 const Time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM');
 
+export const FssaiRegex = /^\d{14}$/;
+export const PanRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+export const GstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+export const IfscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+
 export class RestaurantApplyDto extends createZodDto(
   z.object({
     name: z.string().trim().min(2).max(80),
@@ -15,8 +20,62 @@ export class RestaurantApplyDto extends createZodDto(
     addressLine: z.string().trim().min(5).max(200),
     lat: z.number().min(-90).max(90),
     lng: z.number().min(-180).max(180),
-    fssaiLicense: z.string().trim().max(20).optional(),
-    gstin: z.string().trim().max(20).optional(),
+    // Owner / primary contact
+    ownerName: z.string().trim().min(2).max(80),
+    ownerPhone: z.string().trim().min(10).max(15).optional(),
+    ownerEmail: z.email().optional(),
+    // Regulatory compliance (FSSAI)
+    fssaiLicense: z.string().trim().regex(FssaiRegex, 'FSSAI license must be exactly 14 digits'),
+    fssaiExpiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'FSSAI expiry date must be YYYY-MM-DD'),
+    fssaiDocumentPath: z.string().trim().min(3),
+    // Business entity & Tax (PAN & GSTIN)
+    legalEntityName: z.string().trim().min(2).max(120),
+    panNumber: z.string().trim().toUpperCase().regex(PanRegex, 'Invalid PAN format (e.g. ABCDE1234F)'),
+    panDocumentPath: z.string().trim().min(3),
+    gstin: z.string().trim().toUpperCase().regex(GstinRegex, 'Invalid GSTIN format').optional(),
+    gstDocumentPath: z.string().trim().optional(),
+    // Bank details for settlements
+    bankAccountNumber: z.string().trim().min(8).max(30),
+    bankIfsc: z.string().trim().toUpperCase().regex(IfscRegex, 'Invalid IFSC code (e.g. HDFC0001234)'),
+    bankBeneficiaryName: z.string().trim().min(2).max(120),
+    bankName: z.string().trim().min(2).max(100),
+    bankChequeDocumentPath: z.string().trim().optional(),
+    // Operational defaults
+    costForTwoPaise: z.number().int().positive().optional(),
+    isVegOnly: z.boolean().optional(),
+    avgPrepMinutes: z.number().int().min(5).max(120).optional(),
+  }),
+) {}
+
+export class RestaurantResubmitDto extends createZodDto(
+  z.object({
+    name: z.string().trim().min(2).max(80).optional(),
+    description: z.string().trim().max(500).optional(),
+    cuisines: z.array(z.string().trim().min(2).max(30)).min(1).max(8).optional(),
+    phone: z.string().trim().min(10).max(15).optional(),
+    email: z.email().optional(),
+    addressLine: z.string().trim().min(5).max(200).optional(),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
+    ownerName: z.string().trim().min(2).max(80).optional(),
+    ownerPhone: z.string().trim().min(10).max(15).optional(),
+    ownerEmail: z.email().optional(),
+    fssaiLicense: z.string().trim().regex(FssaiRegex, 'FSSAI license must be exactly 14 digits').optional(),
+    fssaiExpiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'FSSAI expiry date must be YYYY-MM-DD').optional(),
+    fssaiDocumentPath: z.string().trim().min(3).optional(),
+    legalEntityName: z.string().trim().min(2).max(120).optional(),
+    panNumber: z.string().trim().toUpperCase().regex(PanRegex, 'Invalid PAN format').optional(),
+    panDocumentPath: z.string().trim().min(3).optional(),
+    gstin: z.string().trim().toUpperCase().regex(GstinRegex, 'Invalid GSTIN format').optional(),
+    gstDocumentPath: z.string().trim().optional(),
+    bankAccountNumber: z.string().trim().min(8).max(30).optional(),
+    bankIfsc: z.string().trim().toUpperCase().regex(IfscRegex, 'Invalid IFSC code').optional(),
+    bankBeneficiaryName: z.string().trim().min(2).max(120).optional(),
+    bankName: z.string().trim().min(2).max(100).optional(),
+    bankChequeDocumentPath: z.string().trim().optional(),
+    costForTwoPaise: z.number().int().positive().optional(),
+    isVegOnly: z.boolean().optional(),
+    avgPrepMinutes: z.number().int().min(5).max(120).optional(),
   }),
 ) {}
 
@@ -46,6 +105,24 @@ export const PartnerRestaurantSchema = z
     deliveryRadiusM: z.number().int(),
     commissionBps: z.number().int(),
     memberRole: z.enum(['owner', 'manager', 'staff']),
+    ownerName: z.string().nullable(),
+    ownerPhone: z.string().nullable(),
+    ownerEmail: z.string().nullable(),
+    fssaiLicense: z.string().nullable(),
+    fssaiExpiryDate: z.string().nullable(),
+    fssaiDocumentPath: z.string().nullable(),
+    panNumber: z.string().nullable(),
+    panDocumentPath: z.string().nullable(),
+    gstin: z.string().nullable(),
+    gstDocumentPath: z.string().nullable(),
+    legalEntityName: z.string().nullable(),
+    bankAccountNumber: z.string().nullable(),
+    bankIfsc: z.string().nullable(),
+    bankBeneficiaryName: z.string().nullable(),
+    bankName: z.string().nullable(),
+    bankChequeDocumentPath: z.string().nullable(),
+    rejectionReason: z.string().nullable(),
+    verifiedAt: z.string().nullable(),
     hours: z.array(
       z.object({ dayOfWeek: z.number().int(), opensAt: z.string(), closesAt: z.string() }),
     ),

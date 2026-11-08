@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { AppError } from '../../common/errors/app-error';
 import { DB, type Db } from '../../infra/database/database';
+import { StorageService } from '../../infra/storage/storage.service';
 import { CatalogCache } from '../catalog/catalog.cache';
 import { MenuRepository } from '../catalog/menu.repository';
 import { UsersService } from '../users/users.service';
@@ -12,6 +13,7 @@ import type {
   ItemOptionsDto,
   PartnerRestaurantDto,
   RestaurantApplyDto,
+  RestaurantResubmitDto,
   SetHoursDto,
   SetStockDto,
   UpdateCategoryDto,
@@ -34,6 +36,7 @@ export class PartnerRestaurantService {
     private readonly users: UsersService,
     private readonly menus: MenuRepository,
     private readonly cache: CatalogCache,
+    private readonly storage: StorageService,
   ) {}
 
   async apply(userId: string, input: RestaurantApplyDto): Promise<PartnerRestaurantDto> {
@@ -43,12 +46,36 @@ export class PartnerRestaurantService {
         'OUTSIDE_SERVICE_AREA',
         'Bocardo does not operate at this location yet',
       );
+
+    // Verify KYC document uploads exist in storage if storage is configured
+    if (input.fssaiDocumentPath && !(await this.storage.exists('kyc-documents', input.fssaiDocumentPath))) {
+      throw AppError.badRequest('FSSAI_DOC_NOT_FOUND', 'FSSAI certificate document not uploaded');
+    }
+    if (input.panDocumentPath && !(await this.storage.exists('kyc-documents', input.panDocumentPath))) {
+      throw AppError.badRequest('PAN_DOC_NOT_FOUND', 'PAN card document not uploaded');
+    }
+
+    // Check if applicant already has a pending or rejected restaurant; if so, update instead of duplicating
+    const existing = await this.db
+      .selectFrom('restaurants as r')
+      .innerJoin('restaurant_members as m', 'm.restaurant_id', 'r.id')
+      .select('r.id')
+      .where('m.user_id', '=', userId)
+      .where('m.role', '=', 'owner')
+      .where('r.status', 'in', ['pending', 'rejected'])
+      .executeTakeFirst();
+
+    if (existing) {
+      await this.resubmit(userId, existing.id, input);
+      return this.get(userId, existing.id);
+    }
+
     const id = await this.db.transaction().execute(async (tx) => {
       const r = await tx
         .insertInto('restaurants')
         .values({
           name: input.name,
-          slug: `${slugify(input.name)}-${randomBytes(3).toString('hex')}`,
+          slug: `${slugify(input.name)}-${randomBytes(4).toString('hex')}`,
           description: input.description ?? null,
           cuisines: input.cuisines,
           phone: input.phone,
@@ -58,8 +85,27 @@ export class PartnerRestaurantService {
           zone_id: zone.id,
           lat: input.lat,
           lng: input.lng,
-          fssai_license: input.fssaiLicense ?? null,
+          owner_name: input.ownerName,
+          owner_phone: input.ownerPhone ?? input.phone,
+          owner_email: input.ownerEmail ?? input.email ?? null,
+          fssai_license: input.fssaiLicense,
+          fssai_expiry_date: new Date(input.fssaiExpiryDate),
+          fssai_document_path: input.fssaiDocumentPath,
+          legal_entity_name: input.legalEntityName,
+          pan_number: input.panNumber,
+          pan_document_path: input.panDocumentPath,
           gstin: input.gstin ?? null,
+          gst_document_path: input.gstDocumentPath ?? null,
+          bank_account_number: input.bankAccountNumber,
+          bank_ifsc: input.bankIfsc,
+          bank_beneficiary_name: input.bankBeneficiaryName,
+          bank_name: input.bankName,
+          bank_cheque_document_path: input.bankChequeDocumentPath ?? null,
+          cost_for_two_paise: input.costForTwoPaise ?? null,
+          is_veg_only: input.isVegOnly ?? false,
+          avg_prep_minutes: input.avgPrepMinutes ?? 20,
+          status: 'pending',
+          rejection_reason: null,
         })
         .returning('id')
         .executeTakeFirstOrThrow();
@@ -82,6 +128,91 @@ export class PartnerRestaurantService {
       return r.id;
     });
     return this.get(userId, id);
+  }
+
+  async resubmit(userId: string, restaurantId: string, input: RestaurantResubmitDto): Promise<PartnerRestaurantDto> {
+    const member = await this.db
+      .selectFrom('restaurant_members')
+      .select('role')
+      .where('restaurant_id', '=', restaurantId)
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+    if (!member || member.role !== 'owner') {
+      throw AppError.forbidden('Only the outlet owner can update onboarding information');
+    }
+
+    const r = await this.db
+      .selectFrom('restaurants')
+      .selectAll()
+      .where('id', '=', restaurantId)
+      .executeTakeFirst();
+    if (!r) throw AppError.notFound('Restaurant');
+    if (r.status === 'active') {
+      throw AppError.conflict('ALREADY_ACTIVE', 'Your restaurant is already active');
+    }
+
+    let zoneId = r.zone_id;
+    let cityId = r.city_id;
+    if (input.lat !== undefined && input.lng !== undefined) {
+      const zone = await this.zones.locate(input.lat, input.lng);
+      if (!zone) {
+        throw AppError.unprocessable('OUTSIDE_SERVICE_AREA', 'Bocardo does not operate at this location yet');
+      }
+      zoneId = zone.id;
+      cityId = zone.city_id;
+    }
+
+    await this.db
+      .updateTable('restaurants')
+      .set({
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.description !== undefined && { description: input.description ?? null }),
+        ...(input.cuisines !== undefined && { cuisines: input.cuisines }),
+        ...(input.phone !== undefined && { phone: input.phone }),
+        ...(input.email !== undefined && { email: input.email ?? null }),
+        ...(input.addressLine !== undefined && { address_line: input.addressLine }),
+        ...(input.lat !== undefined && { lat: input.lat }),
+        ...(input.lng !== undefined && { lng: input.lng }),
+        zone_id: zoneId,
+        city_id: cityId,
+        ...(input.ownerName !== undefined && { owner_name: input.ownerName }),
+        ...(input.ownerPhone !== undefined && { owner_phone: input.ownerPhone }),
+        ...(input.ownerEmail !== undefined && { owner_email: input.ownerEmail ?? null }),
+        ...(input.fssaiLicense !== undefined && { fssai_license: input.fssaiLicense }),
+        ...(input.fssaiExpiryDate !== undefined && { fssai_expiry_date: new Date(input.fssaiExpiryDate) }),
+        ...(input.fssaiDocumentPath !== undefined && { fssai_document_path: input.fssaiDocumentPath }),
+        ...(input.legalEntityName !== undefined && { legal_entity_name: input.legalEntityName }),
+        ...(input.panNumber !== undefined && { pan_number: input.panNumber }),
+        ...(input.panDocumentPath !== undefined && { pan_document_path: input.panDocumentPath }),
+        ...(input.gstin !== undefined && { gstin: input.gstin ?? null }),
+        ...(input.gstDocumentPath !== undefined && { gst_document_path: input.gstDocumentPath ?? null }),
+        ...(input.bankAccountNumber !== undefined && { bank_account_number: input.bankAccountNumber }),
+        ...(input.bankIfsc !== undefined && { bank_ifsc: input.bankIfsc }),
+        ...(input.bankBeneficiaryName !== undefined && { bank_beneficiary_name: input.bankBeneficiaryName }),
+        ...(input.bankName !== undefined && { bank_name: input.bankName }),
+        ...(input.bankChequeDocumentPath !== undefined && { bank_cheque_document_path: input.bankChequeDocumentPath ?? null }),
+        ...(input.costForTwoPaise !== undefined && { cost_for_two_paise: input.costForTwoPaise ?? null }),
+        ...(input.isVegOnly !== undefined && { is_veg_only: input.isVegOnly }),
+        ...(input.avgPrepMinutes !== undefined && { avg_prep_minutes: input.avgPrepMinutes }),
+        status: 'pending',
+        rejection_reason: null,
+      })
+      .where('id', '=', restaurantId)
+      .execute();
+
+    return this.get(userId, restaurantId);
+  }
+
+  async myApplication(userId: string): Promise<PartnerRestaurantDto | null> {
+    const member = await this.db
+      .selectFrom('restaurant_members')
+      .select('restaurant_id')
+      .where('user_id', '=', userId)
+      .where('role', '=', 'owner')
+      .orderBy('created_at', 'desc')
+      .executeTakeFirst();
+    if (!member) return null;
+    return this.get(userId, member.restaurant_id);
   }
 
   async list(userId: string): Promise<PartnerRestaurantDto[]> {
@@ -135,6 +266,24 @@ export class PartnerRestaurantService {
       deliveryRadiusM: r.delivery_radius_m,
       commissionBps: r.commission_bps,
       memberRole: r.member_role,
+      ownerName: r.owner_name,
+      ownerPhone: r.owner_phone,
+      ownerEmail: r.owner_email,
+      fssaiLicense: r.fssai_license,
+      fssaiExpiryDate: r.fssai_expiry_date ? new Date(r.fssai_expiry_date).toISOString().slice(0, 10) : null,
+      fssaiDocumentPath: r.fssai_document_path,
+      panNumber: r.pan_number,
+      panDocumentPath: r.pan_document_path,
+      gstin: r.gstin,
+      gstDocumentPath: r.gst_document_path,
+      legalEntityName: r.legal_entity_name,
+      bankAccountNumber: r.bank_account_number ? `••••${r.bank_account_number.slice(-4)}` : null,
+      bankIfsc: r.bank_ifsc,
+      bankBeneficiaryName: r.bank_beneficiary_name,
+      bankName: r.bank_name,
+      bankChequeDocumentPath: r.bank_cheque_document_path,
+      rejectionReason: r.rejection_reason,
+      verifiedAt: r.verified_at ? r.verified_at.toISOString() : null,
       hours: hours.map((h) => ({
         dayOfWeek: h.day_of_week,
         opensAt: h.opens_at.slice(0, 5),

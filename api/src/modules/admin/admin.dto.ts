@@ -184,6 +184,7 @@ export const AdminRestaurantSchema = z
     cuisines: z.array(z.string()),
     addressLine: z.string(),
     phone: z.string().nullable(),
+    email: z.string().nullable().optional(),
     cityId: z.string(),
     zoneId: z.string().nullable(),
     lat: z.number(),
@@ -192,12 +193,38 @@ export const AdminRestaurantSchema = z
     ratingCount: z.number().int(),
     commissionBps: z.number().int(),
     deliveryRadiusM: z.number().int(),
+    ownerName: z.string().nullable(),
+    ownerPhone: z.string().nullable(),
+    ownerEmail: z.string().nullable(),
     fssaiLicense: z.string().nullable(),
+    fssaiExpiryDate: z.string().nullable(),
+    fssaiDocumentPath: z.string().nullable(),
+    panNumber: z.string().nullable(),
+    panDocumentPath: z.string().nullable(),
     gstin: z.string().nullable(),
+    gstDocumentPath: z.string().nullable(),
+    legalEntityName: z.string().nullable(),
+    bankAccountNumber: z.string().nullable(),
+    bankIfsc: z.string().nullable(),
+    bankBeneficiaryName: z.string().nullable(),
+    bankName: z.string().nullable(),
+    bankChequeDocumentPath: z.string().nullable(),
+    rejectionReason: z.string().nullable(),
+    verifiedAt: z.string().nullable(),
+    verifiedBy: z.string().nullable(),
     lastHeartbeatAt: z.string().nullable(),
     createdAt: z.string(),
   })
   .meta({ id: 'AdminRestaurant' });
+
+export class RestaurantDocumentsDto extends createZodDto(
+  z.object({
+    fssaiUrl: z.string().nullable(),
+    panUrl: z.string().nullable(),
+    gstUrl: z.string().nullable(),
+    chequeUrl: z.string().nullable(),
+  }),
+) {}
 
 export class AdminRestaurantPageDto extends createZodDto(Page(AdminRestaurantSchema)) {}
 export class AdminRestaurantDto extends createZodDto(AdminRestaurantSchema.clone()) {}

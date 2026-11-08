@@ -57,6 +57,7 @@ export * from './registerDeviceDtoPlatform';
 export * from './rejectOrderDto';
 export * from './rejectOrderDtoReason';
 export * from './restaurantApplyDto';
+export * from './restaurantResubmitDto';
 export * from './setBusyDto';
 export * from './setHoursDto';
 export * from './setHoursDtoHoursItem';

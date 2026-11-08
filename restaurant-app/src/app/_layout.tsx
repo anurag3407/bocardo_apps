@@ -44,6 +44,7 @@ export default function RootLayout() {
               <Stack.Screen name="menu/item" options={{ title: 'Item', presentation: 'modal' }} />
               <Stack.Screen name="history" options={{ title: 'Order history' }} />
               <Stack.Screen name="support/new" options={{ title: 'Support', presentation: 'modal' }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             </Stack.Protected>
             <Stack.Protected guard={signedIn && !isPartner}>
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />

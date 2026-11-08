@@ -1,9 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
+import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { SectionList, StyleSheet, View } from 'react-native';
 import { getPartnerListOrdersQueryKey, partnerHeartbeat, partnerSetOpen, usePartnerListOrders } from '@/core/api/generated/partner/partner';
 import { useRealtime } from '@/core/realtime/use-realtime';
+import { OnboardingStatusView } from '@/features/onboarding/OnboardingStatusView';
 import { useCurrentRestaurant } from '@/features/outlet/selected-restaurant';
 import { EmptyState, ErrorState, Icon, Loading, radius, Row, Screen, spacing, Text, Toggle, toneColors, useTheme } from '@/ui';
 import { OrderCard } from './OrderCard';
@@ -43,9 +45,12 @@ export function OrdersBoardScreen() {
   if (!current) return <EmptyState icon="storefront-outline" title="No outlet found" />;
   if (current.status !== 'active') {
     return (
-      <Screen>
-        <EmptyState icon="hourglass-outline" title="Under review" message="Your outlet will go live once our team verifies your details. We'll notify you." />
-      </Screen>
+      <OnboardingStatusView
+        restaurant={current}
+        onRefresh={() => void refetchOutlet()}
+        refreshing={loadingOutlet}
+        onEditAndResubmit={() => router.push('/onboarding')}
+      />
     );
   }
 

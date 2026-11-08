@@ -27,6 +27,7 @@ import {
   BlockUserDto,
   CashDepositDto,
   GrantAdminDto,
+  RestaurantDocumentsDto,
   RestaurantStatusDto,
   RestaurantTermsDto,
   RiderKycDto,
@@ -59,6 +60,13 @@ export class AdminAccountsController {
   @ZodResponse({ type: AdminRestaurantDto })
   restaurant(@Param('id', ParseUUIDPipe) id: string) {
     return this.accounts.restaurant(id);
+  }
+
+  @AdminRoles('ops', 'support', 'finance')
+  @Get('restaurants/:id/documents')
+  @ZodResponse({ type: RestaurantDocumentsDto })
+  restaurantDocuments(@Param('id', ParseUUIDPipe) id: string) {
+    return this.accounts.getRestaurantDocuments(id);
   }
 
   @AdminRoles('ops')

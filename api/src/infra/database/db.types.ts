@@ -161,7 +161,24 @@ export interface RestaurantsTable {
   missed_orders_count: Generated<number>;
   last_heartbeat_at: NullableTimestamp;
   fssai_license: string | null;
+  fssai_expiry_date: NullableTimestamp;
+  fssai_document_path: string | null;
+  pan_number: string | null;
+  pan_document_path: string | null;
   gstin: string | null;
+  gst_document_path: string | null;
+  legal_entity_name: string | null;
+  owner_name: string | null;
+  owner_phone: string | null;
+  owner_email: string | null;
+  bank_account_number: string | null;
+  bank_ifsc: string | null;
+  bank_beneficiary_name: string | null;
+  bank_name: string | null;
+  bank_cheque_document_path: string | null;
+  rejection_reason: string | null;
+  verified_at: NullableTimestamp;
+  verified_by: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }

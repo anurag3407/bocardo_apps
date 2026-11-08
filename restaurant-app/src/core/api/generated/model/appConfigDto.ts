@@ -12,4 +12,6 @@ export interface AppConfigDto {
   supportPhone: string | null;
   /** @nullable */
   supportEmail: string | null;
+  /** @nullable */
+  campaignIcon?: string | null;
 }

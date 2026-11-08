@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import type { AuthUser } from '../../common/auth/auth-user';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
+import { AppError } from '../../common/errors/app-error';
 import { Idempotent } from '../../common/idempotency/idempotent.decorator';
 import { EarningsDto, EarningsQueryDto, istRange } from '../finance/finance.dto';
 import { LedgerService } from '../finance/ledger.service';
@@ -32,6 +33,7 @@ import {
   PartnerRestaurantListDto,
   RejectOrderDto,
   RestaurantApplyDto,
+  RestaurantResubmitDto,
   SetBusyDto,
   SetHoursDto,
   SetOpenDto,
@@ -57,10 +59,29 @@ export class PartnerController {
     private readonly ledger: LedgerService,
   ) {}
 
+  @Get('application')
+  @ZodResponse({ type: PartnerRestaurantDto, status: 200 })
+  async myApplication(@CurrentUser() user: AuthUser) {
+    const app = await this.restaurants.myApplication(user.id);
+    if (!app) throw AppError.notFound('No restaurant application found');
+    return app;
+  }
+
   @Post('apply')
   @ZodResponse({ type: PartnerRestaurantDto, status: 201 })
   apply(@CurrentUser() user: AuthUser, @Body() body: RestaurantApplyDto) {
     return this.restaurants.apply(user.id, body);
+  }
+
+  @Roles('restaurant')
+  @Post('restaurants/:rid/resubmit')
+  @ZodResponse({ type: PartnerRestaurantDto, status: 200 })
+  resubmit(
+    @CurrentUser() user: AuthUser,
+    @Param('rid', ParseUUIDPipe) rid: string,
+    @Body() body: RestaurantResubmitDto,
+  ) {
+    return this.restaurants.resubmit(user.id, rid, body);
   }
 
   @Roles('restaurant')

@@ -100,6 +100,7 @@ export * from './reassignDto';
 export * from './registerDeviceDto';
 export * from './registerDeviceDtoApp';
 export * from './registerDeviceDtoPlatform';
+export * from './restaurantDocumentsDto';
 export * from './restaurantStatusDto';
 export * from './restaurantStatusDtoStatus';
 export * from './restaurantTermsDto';

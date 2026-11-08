@@ -4,6 +4,7 @@ import { AppError } from '../../common/errors/app-error';
 import { iso } from '../../common/http/schemas';
 import { DB, type Db } from '../../infra/database/database';
 import type { AdminRole, Restaurant } from '../../infra/database/db.types';
+import { StorageService } from '../../infra/storage/storage.service';
 import { AuditService } from '../../platform/audit/audit.service';
 import { OutboxService } from '../../platform/outbox/outbox.service';
 import { CatalogCache } from '../catalog/catalog.cache';
@@ -15,6 +16,7 @@ import type {
   AdminRidersQueryDto,
   AdminUsersQueryDto,
   GrantAdminDto,
+  RestaurantDocumentsDto,
   RestaurantStatusDto,
   RestaurantTermsDto,
   RiderKycDto,
@@ -28,6 +30,7 @@ export class AdminAccountsService {
     private readonly outbox: OutboxService,
     private readonly pool: RiderPool,
     private readonly cache: CatalogCache,
+    private readonly storage: StorageService,
   ) {}
 
   // ── Restaurants ─────────────────────────────────────────────────────────
@@ -63,7 +66,12 @@ export class AdminAccountsService {
     await this.db.transaction().execute(async (tx) => {
       await tx
         .updateTable('restaurants')
-        .set({ status: input.status, ...(input.status !== 'active' ? { is_open: false } : {}) })
+        .set({
+          status: input.status,
+          ...(input.status === 'active'
+            ? { is_open: false, rejection_reason: null, verified_at: new Date(), verified_by: actorId }
+            : { is_open: false, rejection_reason: input.reason ?? null }),
+        })
         .where('id', '=', id)
         .execute();
       await this.audit.record(tx, {
@@ -80,16 +88,39 @@ export class AdminAccountsService {
           title:
             input.status === 'active'
               ? 'Your restaurant is live on Bocardo!'
-              : `Restaurant ${input.status}`,
+              : input.status === 'rejected'
+                ? 'Action Required: Restaurant Application'
+                : `Restaurant ${input.status}`,
           body:
             input.status === 'active'
               ? 'Switch on "Accepting orders" to start receiving orders.'
-              : (input.reason ?? 'Contact partner support for details.'),
+              : (input.reason ?? 'Please check your application details in the partner app.'),
         },
       });
     });
     await this.cache.invalidateMenu(id);
     return this.restaurant(id);
+  }
+
+  async getRestaurantDocuments(id: string): Promise<RestaurantDocumentsDto> {
+    const r = await this.db
+      .selectFrom('restaurants')
+      .select([
+        'fssai_document_path',
+        'pan_document_path',
+        'gst_document_path',
+        'bank_cheque_document_path',
+      ])
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!r) throw AppError.notFound('Restaurant');
+    const [fssaiUrl, panUrl, gstUrl, chequeUrl] = await Promise.all([
+      r.fssai_document_path ? this.storage.signedUrl('kyc-documents', r.fssai_document_path, 3600) : null,
+      r.pan_document_path ? this.storage.signedUrl('kyc-documents', r.pan_document_path, 3600) : null,
+      r.gst_document_path ? this.storage.signedUrl('kyc-documents', r.gst_document_path, 3600) : null,
+      r.bank_cheque_document_path ? this.storage.signedUrl('kyc-documents', r.bank_cheque_document_path, 3600) : null,
+    ]);
+    return { fssaiUrl, panUrl, gstUrl, chequeUrl };
   }
 
   async setRestaurantTerms(id: string, actorId: string, input: RestaurantTermsDto) {
@@ -302,6 +333,7 @@ export function toAdminRestaurant(r: Restaurant): AdminRestaurantDto {
     cuisines: r.cuisines,
     addressLine: r.address_line,
     phone: r.phone,
+    email: r.email,
     cityId: r.city_id,
     zoneId: r.zone_id,
     lat: r.lat,
@@ -310,8 +342,25 @@ export function toAdminRestaurant(r: Restaurant): AdminRestaurantDto {
     ratingCount: r.rating_count,
     commissionBps: r.commission_bps,
     deliveryRadiusM: r.delivery_radius_m,
+    ownerName: r.owner_name,
+    ownerPhone: r.owner_phone,
+    ownerEmail: r.owner_email,
     fssaiLicense: r.fssai_license,
+    fssaiExpiryDate: r.fssai_expiry_date ? new Date(r.fssai_expiry_date).toISOString().slice(0, 10) : null,
+    fssaiDocumentPath: r.fssai_document_path,
+    panNumber: r.pan_number,
+    panDocumentPath: r.pan_document_path,
     gstin: r.gstin,
+    gstDocumentPath: r.gst_document_path,
+    legalEntityName: r.legal_entity_name,
+    bankAccountNumber: r.bank_account_number,
+    bankIfsc: r.bank_ifsc,
+    bankBeneficiaryName: r.bank_beneficiary_name,
+    bankName: r.bank_name,
+    bankChequeDocumentPath: r.bank_cheque_document_path,
+    rejectionReason: r.rejection_reason,
+    verifiedAt: iso(r.verified_at),
+    verifiedBy: r.verified_by,
     lastHeartbeatAt: iso(r.last_heartbeat_at),
     createdAt: r.created_at.toISOString(),
   };

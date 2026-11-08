@@ -16,6 +16,8 @@ export interface AdminRestaurant {
   addressLine: string;
   /** @nullable */
   phone: string | null;
+  /** @nullable */
+  email?: string | null;
   cityId: string;
   /** @nullable */
   zoneId: string | null;
@@ -38,9 +40,43 @@ export interface AdminRestaurant {
      */
   deliveryRadiusM: number;
   /** @nullable */
+  ownerName: string | null;
+  /** @nullable */
+  ownerPhone: string | null;
+  /** @nullable */
+  ownerEmail: string | null;
+  /** @nullable */
   fssaiLicense: string | null;
   /** @nullable */
+  fssaiExpiryDate: string | null;
+  /** @nullable */
+  fssaiDocumentPath: string | null;
+  /** @nullable */
+  panNumber: string | null;
+  /** @nullable */
+  panDocumentPath: string | null;
+  /** @nullable */
   gstin: string | null;
+  /** @nullable */
+  gstDocumentPath: string | null;
+  /** @nullable */
+  legalEntityName: string | null;
+  /** @nullable */
+  bankAccountNumber: string | null;
+  /** @nullable */
+  bankIfsc: string | null;
+  /** @nullable */
+  bankBeneficiaryName: string | null;
+  /** @nullable */
+  bankName: string | null;
+  /** @nullable */
+  bankChequeDocumentPath: string | null;
+  /** @nullable */
+  rejectionReason: string | null;
+  /** @nullable */
+  verifiedAt: string | null;
+  /** @nullable */
+  verifiedBy: string | null;
   /** @nullable */
   lastHeartbeatAt: string | null;
   createdAt: string;

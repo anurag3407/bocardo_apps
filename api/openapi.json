@@ -1614,6 +1614,32 @@
         ]
       }
     },
+    "/partner/application": {
+      "get": {
+        "operationId": "Partner_myApplication",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerRestaurantDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "partner"
+        ]
+      }
+    },
     "/partner/apply": {
       "post": {
         "operationId": "Partner_apply",
@@ -1630,6 +1656,51 @@
         },
         "responses": {
           "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerRestaurantDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "partner"
+        ]
+      }
+    },
+    "/partner/restaurants/{rid}/resubmit": {
+      "post": {
+        "operationId": "Partner_resubmit",
+        "parameters": [
+          {
+            "name": "rid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestaurantResubmitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": "",
             "content": {
               "application/json": {
@@ -3333,6 +3404,41 @@
         ]
       }
     },
+    "/admin/restaurants/{id}/documents": {
+      "get": {
+        "operationId": "AdminAccounts_restaurantDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestaurantDocumentsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/restaurants/{id}/status": {
       "post": {
         "operationId": "AdminAccounts_setRestaurantStatus",
@@ -4413,6 +4519,131 @@
           "admin"
         ]
       }
+    },
+    "/maps/autocomplete": {
+      "get": {
+        "operationId": "Maps_autocomplete",
+        "parameters": [
+          {
+            "name": "query",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minLength": 2,
+              "maxLength": 120,
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionToken",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Maps"
+        ]
+      }
+    },
+    "/maps/place-details": {
+      "get": {
+        "operationId": "Maps_placeDetails",
+        "parameters": [
+          {
+            "name": "placeId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minLength": 3,
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionToken",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Maps"
+        ]
+      }
+    },
+    "/maps/reverse-geocode": {
+      "get": {
+        "operationId": "Maps_reverseGeocode",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Maps"
+        ]
+      }
     }
   },
   "info": {
@@ -4588,6 +4819,10 @@
             "nullable": true
           },
           "supportEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "campaignIcon": {
             "type": "string",
             "nullable": true
           }
@@ -6927,71 +7162,6 @@
           "lng"
         ]
       },
-      "RestaurantApplyDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 80
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 500
-          },
-          "cuisines": {
-            "minItems": 1,
-            "maxItems": 8,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 2,
-              "maxLength": 30
-            }
-          },
-          "phone": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 15
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
-          },
-          "addressLine": {
-            "type": "string",
-            "minLength": 5,
-            "maxLength": 200
-          },
-          "lat": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "lng": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "fssaiLicense": {
-            "type": "string",
-            "maxLength": 20
-          },
-          "gstin": {
-            "type": "string",
-            "maxLength": 20
-          }
-        },
-        "required": [
-          "name",
-          "cuisines",
-          "phone",
-          "addressLine",
-          "lat",
-          "lng"
-        ]
-      },
       "PartnerRestaurant": {
         "type": "object",
         "properties": {
@@ -7102,6 +7272,78 @@
               "staff"
             ]
           },
+          "ownerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "ownerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "ownerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "fssaiLicense": {
+            "type": "string",
+            "nullable": true
+          },
+          "fssaiExpiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "fssaiDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "panNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "panDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstin": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "legalEntityName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankIfsc": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankChequeDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
           "hours": {
             "type": "array",
             "items": {
@@ -7153,12 +7395,313 @@
           "deliveryRadiusM",
           "commissionBps",
           "memberRole",
+          "ownerName",
+          "ownerPhone",
+          "ownerEmail",
+          "fssaiLicense",
+          "fssaiExpiryDate",
+          "fssaiDocumentPath",
+          "panNumber",
+          "panDocumentPath",
+          "gstin",
+          "gstDocumentPath",
+          "legalEntityName",
+          "bankAccountNumber",
+          "bankIfsc",
+          "bankBeneficiaryName",
+          "bankName",
+          "bankChequeDocumentPath",
+          "rejectionReason",
+          "verifiedAt",
           "hours"
         ],
         "additionalProperties": false
       },
       "PartnerRestaurantDto": {
         "$ref": "#/components/schemas/PartnerRestaurant"
+      },
+      "RestaurantApplyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "cuisines": {
+            "minItems": 1,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 30
+            }
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 15
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "addressLine": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 200
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "ownerName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "ownerPhone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 15
+          },
+          "ownerEmail": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "fssaiLicense": {
+            "type": "string",
+            "pattern": "^\\d{14}$"
+          },
+          "fssaiExpiryDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "fssaiDocumentPath": {
+            "type": "string",
+            "minLength": 3
+          },
+          "legalEntityName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "panNumber": {
+            "type": "string",
+            "pattern": "^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+          },
+          "panDocumentPath": {
+            "type": "string",
+            "minLength": 3
+          },
+          "gstin": {
+            "type": "string",
+            "pattern": "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+          },
+          "gstDocumentPath": {
+            "type": "string"
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 30
+          },
+          "bankIfsc": {
+            "type": "string",
+            "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$"
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "bankName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "bankChequeDocumentPath": {
+            "type": "string"
+          },
+          "costForTwoPaise": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0
+          },
+          "isVegOnly": {
+            "type": "boolean"
+          },
+          "avgPrepMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 120
+          }
+        },
+        "required": [
+          "name",
+          "cuisines",
+          "phone",
+          "addressLine",
+          "lat",
+          "lng",
+          "ownerName",
+          "fssaiLicense",
+          "fssaiExpiryDate",
+          "fssaiDocumentPath",
+          "legalEntityName",
+          "panNumber",
+          "panDocumentPath",
+          "bankAccountNumber",
+          "bankIfsc",
+          "bankBeneficiaryName",
+          "bankName"
+        ]
+      },
+      "RestaurantResubmitDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "cuisines": {
+            "minItems": 1,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 30
+            }
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 15
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "addressLine": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 200
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "ownerName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "ownerPhone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 15
+          },
+          "ownerEmail": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "fssaiLicense": {
+            "type": "string",
+            "pattern": "^\\d{14}$"
+          },
+          "fssaiExpiryDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "fssaiDocumentPath": {
+            "type": "string",
+            "minLength": 3
+          },
+          "legalEntityName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "panNumber": {
+            "type": "string",
+            "pattern": "^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+          },
+          "panDocumentPath": {
+            "type": "string",
+            "minLength": 3
+          },
+          "gstin": {
+            "type": "string",
+            "pattern": "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+          },
+          "gstDocumentPath": {
+            "type": "string"
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 30
+          },
+          "bankIfsc": {
+            "type": "string",
+            "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$"
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "bankName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "bankChequeDocumentPath": {
+            "type": "string"
+          },
+          "costForTwoPaise": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0
+          },
+          "isVegOnly": {
+            "type": "boolean"
+          },
+          "avgPrepMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 120
+          }
+        }
       },
       "PartnerRestaurantListDto": {
         "type": "array",
@@ -8811,6 +9354,10 @@
             "type": "string",
             "nullable": true
           },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
           "cityId": {
             "type": "string"
           },
@@ -8842,11 +9389,79 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "ownerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "ownerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "ownerEmail": {
+            "type": "string",
+            "nullable": true
+          },
           "fssaiLicense": {
             "type": "string",
             "nullable": true
           },
+          "fssaiExpiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "fssaiDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "panNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "panDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
           "gstin": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "legalEntityName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankIfsc": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankChequeDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedBy": {
             "type": "string",
             "nullable": true
           },
@@ -8874,8 +9489,25 @@
           "ratingCount",
           "commissionBps",
           "deliveryRadiusM",
+          "ownerName",
+          "ownerPhone",
+          "ownerEmail",
           "fssaiLicense",
+          "fssaiExpiryDate",
+          "fssaiDocumentPath",
+          "panNumber",
+          "panDocumentPath",
           "gstin",
+          "gstDocumentPath",
+          "legalEntityName",
+          "bankAccountNumber",
+          "bankIfsc",
+          "bankBeneficiaryName",
+          "bankName",
+          "bankChequeDocumentPath",
+          "rejectionReason",
+          "verifiedAt",
+          "verifiedBy",
           "lastHeartbeatAt",
           "createdAt"
         ],
@@ -8903,6 +9535,34 @@
       },
       "AdminRestaurantDto": {
         "$ref": "#/components/schemas/AdminRestaurant"
+      },
+      "RestaurantDocumentsDto": {
+        "type": "object",
+        "properties": {
+          "fssaiUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "panUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "chequeUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "fssaiUrl",
+          "panUrl",
+          "gstUrl",
+          "chequeUrl"
+        ],
+        "additionalProperties": false
       },
       "RestaurantStatusDto": {
         "type": "object",

@@ -43,8 +43,63 @@ export interface RestaurantApplyDto {
      * @maximum 180
      */
   lng: number;
-  /** @maxLength 20 */
-  fssaiLicense?: string;
-  /** @maxLength 20 */
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  ownerName: string;
+  /**
+     * @minLength 10
+     * @maxLength 15
+     */
+  ownerPhone?: string;
+  /** @pattern ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  ownerEmail?: string;
+  /** @pattern ^\d{14}$ */
+  fssaiLicense: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  fssaiExpiryDate: string;
+  /** @minLength 3 */
+  fssaiDocumentPath: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  legalEntityName: string;
+  /** @pattern ^[A-Z]{5}[0-9]{4}[A-Z]{1}$ */
+  panNumber: string;
+  /** @minLength 3 */
+  panDocumentPath: string;
+  /** @pattern ^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$ */
   gstin?: string;
+  gstDocumentPath?: string;
+  /**
+     * @minLength 8
+     * @maxLength 30
+     */
+  bankAccountNumber: string;
+  /** @pattern ^[A-Z]{4}0[A-Z0-9]{6}$ */
+  bankIfsc: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  bankBeneficiaryName: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  bankName: string;
+  bankChequeDocumentPath?: string;
+  /**
+     * @maximum 9007199254740991
+     * @exclusiveMinimum 0
+     */
+  costForTwoPaise?: number;
+  isVegOnly?: boolean;
+  /**
+     * @minimum 5
+     * @maximum 120
+     */
+  avgPrepMinutes?: number;
 }

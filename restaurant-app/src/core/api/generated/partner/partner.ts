@@ -41,6 +41,7 @@ import type {
   PartnerRestaurantListDto,
   RejectOrderDto,
   RestaurantApplyDto,
+  RestaurantResubmitDto,
   SetBusyDto,
   SetHoursDto,
   SetOpenDto,
@@ -72,6 +73,100 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getPartnerMyApplicationUrl = () => {
+
+
+
+
+  return `/partner/application`
+}
+
+export const partnerMyApplication = async ( options?: Parameters<typeof httpClient>[1]): Promise<PartnerRestaurant> => {
+
+  return httpClient<PartnerRestaurant>(getPartnerMyApplicationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPartnerMyApplicationQueryKey = () => {
+    return [
+    `/partner/application`
+    ] as const;
+    }
+
+
+export const getPartnerMyApplicationQueryOptions = <TData = Awaited<ReturnType<typeof partnerMyApplication>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partnerMyApplication>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartnerMyApplicationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partnerMyApplication>>> = ({ signal }) => partnerMyApplication({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partnerMyApplication>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartnerMyApplicationQueryResult = NonNullable<Awaited<ReturnType<typeof partnerMyApplication>>>
+export type PartnerMyApplicationQueryError = ErrorType<unknown>
+
+
+export function usePartnerMyApplication<TData = Awaited<ReturnType<typeof partnerMyApplication>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partnerMyApplication>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partnerMyApplication>>,
+          TError,
+          Awaited<ReturnType<typeof partnerMyApplication>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartnerMyApplication<TData = Awaited<ReturnType<typeof partnerMyApplication>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partnerMyApplication>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partnerMyApplication>>,
+          TError,
+          Awaited<ReturnType<typeof partnerMyApplication>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartnerMyApplication<TData = Awaited<ReturnType<typeof partnerMyApplication>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partnerMyApplication>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartnerMyApplication<TData = Awaited<ReturnType<typeof partnerMyApplication>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partnerMyApplication>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartnerMyApplicationQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 export const getPartnerApplyUrl = () => {
 
@@ -153,6 +248,88 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getPartnerApplyMutationOptions(options), queryClient);
+    }
+    export const getPartnerResubmitUrl = (rid: string,) => {
+
+
+
+
+  return `/partner/restaurants/${rid}/resubmit`
+}
+
+export const partnerResubmit = async (rid: string,
+    restaurantResubmitDto: RestaurantResubmitDto, options?: Parameters<typeof httpClient>[1]): Promise<PartnerRestaurant> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<PartnerRestaurant>(getPartnerResubmitUrl(rid),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(restaurantResubmitDto)
+  }
+);}
+
+
+
+
+
+export const getPartnerResubmitMutationKey = () => ['partnerResubmit'] as const;
+
+export const getPartnerResubmitMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partnerResubmit>>, TError,PartnerResubmitMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof partnerResubmit>>, TError,PartnerResubmitMutationVariables, TContext> => {
+
+const mutationKey = getPartnerResubmitMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof partnerResubmit>>, PartnerResubmitMutationVariables> = (props) => {
+          const {rid,data} = props ?? {};
+
+          return  partnerResubmit(rid,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PartnerResubmitMutationResult = NonNullable<Awaited<ReturnType<typeof partnerResubmit>>>
+    export type PartnerResubmitMutationBody = BodyType<RestaurantResubmitDto>
+    export type PartnerResubmitMutationError = ErrorType<unknown>
+    export type PartnerResubmitMutationVariables = {rid: string;data: BodyType<RestaurantResubmitDto>}
+
+    export const usePartnerResubmit = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partnerResubmit>>, TError,PartnerResubmitMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof partnerResubmit>>,
+        TError,
+        PartnerResubmitMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPartnerResubmitMutationOptions(options), queryClient);
     }
     export const getPartnerListUrl = () => {
 

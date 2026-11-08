@@ -69,5 +69,41 @@ export interface PartnerRestaurant {
      */
   commissionBps: number;
   memberRole: PartnerRestaurantMemberRole;
+  /** @nullable */
+  ownerName: string | null;
+  /** @nullable */
+  ownerPhone: string | null;
+  /** @nullable */
+  ownerEmail: string | null;
+  /** @nullable */
+  fssaiLicense: string | null;
+  /** @nullable */
+  fssaiExpiryDate: string | null;
+  /** @nullable */
+  fssaiDocumentPath: string | null;
+  /** @nullable */
+  panNumber: string | null;
+  /** @nullable */
+  panDocumentPath: string | null;
+  /** @nullable */
+  gstin: string | null;
+  /** @nullable */
+  gstDocumentPath: string | null;
+  /** @nullable */
+  legalEntityName: string | null;
+  /** @nullable */
+  bankAccountNumber: string | null;
+  /** @nullable */
+  bankIfsc: string | null;
+  /** @nullable */
+  bankBeneficiaryName: string | null;
+  /** @nullable */
+  bankName: string | null;
+  /** @nullable */
+  bankChequeDocumentPath: string | null;
+  /** @nullable */
+  rejectionReason: string | null;
+  /** @nullable */
+  verifiedAt: string | null;
   hours: PartnerRestaurantHoursItem[];
 }

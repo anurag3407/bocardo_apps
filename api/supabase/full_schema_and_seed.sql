@@ -149,13 +149,31 @@ create table public.restaurants (
   missed_orders_count  integer not null default 0,
   last_heartbeat_at    timestamptz,
   fssai_license        text,
+  fssai_expiry_date    date,
+  fssai_document_path  text,
+  pan_number           text,
+  pan_document_path    text,
   gstin                text,
+  gst_document_path    text,
+  legal_entity_name    text,
+  owner_name           text,
+  owner_phone          text,
+  owner_email          text,
+  bank_account_number  text,
+  bank_ifsc            text,
+  bank_beneficiary_name text,
+  bank_name            text,
+  bank_cheque_document_path text,
+  rejection_reason     text,
+  verified_at          timestamptz,
+  verified_by          uuid references public.profiles (id),
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
 create index restaurants_location_gix on public.restaurants using gist (location);
 create index restaurants_name_trgm on public.restaurants using gin (name extensions.gin_trgm_ops);
 create index restaurants_status_idx on public.restaurants (status, city_id);
+create index restaurants_status_created_idx on public.restaurants (status, created_at desc);
 create trigger restaurants_updated_at before update on public.restaurants
   for each row execute function public.set_updated_at();
 
