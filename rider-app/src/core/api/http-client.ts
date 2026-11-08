@@ -19,8 +19,12 @@ async function send(url: string, init: RequestInit): Promise<Response> {
       headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(await authHeader()), ...init.headers },
       signal: controller.signal,
     });
-  } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', 'Network request failed');
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new ApiError(0, 'TIMEOUT', 'Request timed out. Please try again.');
+    }
+    const message = err instanceof Error && err.message ? err.message : 'Network request failed';
+    throw new ApiError(0, 'NETWORK_ERROR', message);
   } finally {
     clearTimeout(timer);
   }
@@ -38,10 +42,21 @@ export async function httpClient<T>(url: string, init: RequestInit = {}): Promis
     if (data.session) res = await send(url, init);
   }
   const text = await res.text();
-  const body = text ? JSON.parse(text) : undefined;
+  let body: any;
+  try {
+    body = text ? JSON.parse(text) : undefined;
+  } catch {
+    body = undefined;
+  }
   if (!res.ok) {
     const err = body?.error ?? {};
-    throw new ApiError(res.status, err.code ?? 'HTTP_ERROR', err.message ?? `Request failed (${res.status})`, err.details, body?.requestId);
+    throw new ApiError(
+      res.status,
+      err.code ?? 'HTTP_ERROR',
+      err.message ?? (res.status >= 500 ? 'Server temporarily unavailable' : `Request failed (${res.status})`),
+      err.details,
+      body?.requestId,
+    );
   }
   return body as T;
 }

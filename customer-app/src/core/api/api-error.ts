@@ -19,7 +19,11 @@ export class ApiError extends Error {
 export const isApiError = (e: unknown, code?: string): e is ApiError => e instanceof ApiError && (!code || e.code === code);
 
 export function errorMessage(e: unknown): string {
-  if (e instanceof ApiError) return e.isNetwork ? 'No internet connection. Please try again.' : e.message;
+  if (e instanceof ApiError) {
+    if (e.code === 'TIMEOUT') return 'Request timed out. Please check your connection and try again.';
+    if (e.isNetwork) return 'No internet connection. Please try again.';
+    return e.message;
+  }
   if (e instanceof Error) return e.message;
   return 'Something went wrong';
 }
