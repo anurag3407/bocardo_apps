@@ -5,6 +5,7 @@ import { ENV, type Env } from '../config/env';
 import { DatabaseModule } from './database/database.module';
 import { createFirebaseApp, FIREBASE_APP } from './firebase/firebase-app';
 import { GEO_PROVIDER } from './geo/geo-provider';
+import { GoogleGeoProvider } from './geo/google-geo-provider';
 import { HaversineGeoProvider } from './geo/haversine-geo-provider';
 import { MapboxGeoProvider } from './geo/mapbox-geo-provider';
 import { JobRegistry, JOB_SCHEDULER } from './jobs/jobs';
@@ -118,8 +119,11 @@ const logger = new Logger('InfraModule');
       provide: GEO_PROVIDER,
       inject: [ENV],
       useFactory: (env: Env) => {
-        if (env.GEO_PROVIDER === 'google')
-          throw new Error('Google Maps provider not implemented yet — set GEO_PROVIDER=mapbox');
+        if (env.GEO_PROVIDER === 'google') {
+          if (env.GOOGLE_MAPS_API_KEY) return new GoogleGeoProvider(env.GOOGLE_MAPS_API_KEY);
+          logger.warn('GOOGLE_MAPS_API_KEY not set — using straight-line distance estimates');
+          return new HaversineGeoProvider();
+        }
         if (env.MAPBOX_ACCESS_TOKEN) return new MapboxGeoProvider(env.MAPBOX_ACCESS_TOKEN);
         logger.warn('MAPBOX_ACCESS_TOKEN not set — using straight-line distance estimates');
         return new HaversineGeoProvider();

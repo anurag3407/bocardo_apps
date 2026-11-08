@@ -35,6 +35,7 @@ export const envSchema = z
 
     GEO_PROVIDER: z.enum(['mapbox', 'google']).default('mapbox'),
     MAPBOX_ACCESS_TOKEN: optionalString,
+    GOOGLE_MAPS_API_KEY: optionalString,
 
     TELEPHONY_PROVIDER: z.enum(['exotel', 'twilio', 'direct']).default('direct'),
     EXOTEL_SID: optionalString,
