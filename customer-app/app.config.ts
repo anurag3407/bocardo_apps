@@ -60,6 +60,26 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     '@react-native-firebase/app-check',
     ['expo-build-properties', { ios: { useFrameworks: 'static' } }],
     '@rnmapbox/maps',
+    [
+      '@mozzius/expo-dynamic-app-icon',
+      {
+        diwali: {
+          ios: './assets/images/icons/icon-diwali.png',
+          android: './assets/images/icons/icon-diwali.png',
+          prerendered: true,
+        },
+        midnight: {
+          ios: './assets/images/icons/icon-midnight.png',
+          android: './assets/images/icons/icon-midnight.png',
+          prerendered: true,
+        },
+        gold: {
+          ios: './assets/images/icons/icon-gold.png',
+          android: './assets/images/icons/icon-gold.png',
+          prerendered: true,
+        },
+      },
+    ],
   ],
   experiments: { typedRoutes: false, reactCompiler: true },
   extra: { eas: { projectId: 'bd130160-9ce6-4c97-9e52-7afe0267788a' } },

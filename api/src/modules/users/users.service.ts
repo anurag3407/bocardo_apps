@@ -93,16 +93,23 @@ export class UsersService {
     const rows = await this.db
       .selectFrom('app_config')
       .select(['key', 'value'])
-      .where('key', 'in', ['min_app_version', 'support'])
+      .where('key', 'in', ['min_app_version', 'support', 'campaign_icon'])
       .execute();
     const byKey = Object.fromEntries(rows.map((r) => [r.key, r.value])) as {
       min_app_version?: Record<string, string>;
       support?: { phone?: string; email?: string };
+      campaign_icon?: Record<string, string> | string;
     };
+    const campaign =
+      typeof byKey.campaign_icon === 'string'
+        ? byKey.campaign_icon
+        : byKey.campaign_icon?.[app] ?? null;
+
     return {
       minVersion: byKey.min_app_version?.[app] ?? '0.0.0',
       supportPhone: byKey.support?.phone ?? null,
       supportEmail: byKey.support?.email ?? null,
+      campaignIcon: campaign ?? null,
     };
   }
 }

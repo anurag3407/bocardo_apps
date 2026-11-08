@@ -36,5 +36,6 @@ export class AppConfigDto extends createZodDto(
     minVersion: z.string(),
     supportPhone: z.string().nullable(),
     supportEmail: z.string().nullable(),
+    campaignIcon: z.string().nullable().optional(),
   }),
 ) {}

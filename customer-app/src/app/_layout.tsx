@@ -6,6 +6,7 @@ import { useColorScheme } from 'react-native';
 import { useTheme } from '@/ui';
 import { startSessionSync, useSession } from '@/core/auth/session-store';
 import { queryClient } from '@/core/query/query-client';
+import { AppIconSyncEffect } from '@/core/app-icon/use-app-icon';
 import { ForceUpdateGate } from '@/features/shell/ForceUpdateGate';
 import { SignedInEffects } from '@/features/shell/SignedInEffects';
 
@@ -26,6 +27,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AppIconSyncEffect />
       <ThemeProvider value={navigationTheme(scheme === 'dark' ? DarkTheme : DefaultTheme, t)}>
         <ForceUpdateGate>
           {signedIn ? <SignedInEffects /> : null}
@@ -45,6 +47,7 @@ export default function RootLayout() {
               <Stack.Screen name="addresses/index" options={{ title: 'Addresses' }} />
               <Stack.Screen name="addresses/new" options={{ title: 'New address' }} />
               <Stack.Screen name="support/new" options={{ title: 'Help', presentation: 'modal' }} />
+              <Stack.Screen name="settings/icon" options={{ title: 'App icon' }} />
             </Stack.Protected>
             <Stack.Protected guard={!signedIn}>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />

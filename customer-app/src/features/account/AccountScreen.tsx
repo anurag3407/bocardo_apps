@@ -79,6 +79,8 @@ export function AccountScreen() {
         <Divider inset={48} />
         <ListItem icon="receipt-outline" title="Your orders" subtitle="Track, rate and get help" onPress={() => router.navigate('/orders')} />
         <Divider inset={48} />
+        <ListItem icon="color-palette-outline" title="App icon" subtitle="Classic, Diwali festive, Midnight, VIP Gold" onPress={() => router.push('/settings/icon')} />
+        <Divider inset={48} />
         <ListItem icon="chatbubble-ellipses-outline" title="Help & support" subtitle={config.data?.supportPhone ? `Call ${config.data.supportPhone}` : 'Raise a request with our team'} onPress={() => router.push('/support/new')} />
       </Card>
 

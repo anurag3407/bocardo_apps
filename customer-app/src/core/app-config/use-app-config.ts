@@ -7,6 +7,7 @@ interface AppConfig {
   minVersion: string;
   supportPhone: string | null;
   supportEmail: string | null;
+  campaignIcon?: string | null;
 }
 
 const toParts = (v: string) => v.split('.').map((n) => Number.parseInt(n, 10) || 0);
