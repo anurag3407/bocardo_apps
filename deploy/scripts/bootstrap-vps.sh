@@ -40,7 +40,8 @@ if [[ ! -f /etc/docker/daemon.json ]]; then
   "live-restore": true,
   "log-driver": "json-file",
   "log-opts": { "max-size": "10m", "max-file": "5" },
-  "features": { "buildkit": true }
+  "features": { "buildkit": true },
+  "dns": ["8.8.8.8", "1.1.1.1"]
 }
 EOF
   systemctl restart docker
@@ -107,6 +108,7 @@ else
 fi
 
 log "firewall"
+sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow 22/tcp
