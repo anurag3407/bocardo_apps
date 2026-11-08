@@ -20,6 +20,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'bocardo-customer',
   userInterfaceStyle: 'automatic',
   platforms: ['ios', 'android'],
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
+  updates: {
+    url: 'https://u.expo.dev/bd130160-9ce6-4c97-9e52-7afe0267788a',
+  },
   ios: {
     bundleIdentifier: 'app.bocardo.customer',
     // a missing file breaks config evaluation for every platform, so only reference it when present
