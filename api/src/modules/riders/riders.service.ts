@@ -14,7 +14,13 @@ import { OrderReader } from '../orders/order-reader.service';
 import { OrderWorkflow } from '../orders/order-workflow.service';
 import { UsersService } from '../users/users.service';
 import { ZonesService } from '../zones/zones.service';
-import type { RiderApplyDto, RiderOrderDto, RiderProfileDto, SosDto } from './riders.dto';
+import type {
+  RiderApplyDto,
+  RiderOrderDto,
+  RiderProfileDto,
+  RiderResubmitDto,
+  SosDto,
+} from './riders.dto';
 
 type DeliveryProofInput = { path: string; lat?: number; lng?: number };
 
@@ -38,18 +44,47 @@ export class RidersService {
   ) {}
 
   async apply(userId: string, input: RiderApplyDto): Promise<RiderProfileDto> {
+    // Check if rider already exists
+    const existing = await this.db
+      .selectFrom('riders')
+      .selectAll()
+      .where('id', '=', userId)
+      .executeTakeFirst();
+
+    if (existing && existing.kyc_status === 'approved') {
+      throw AppError.conflict('ALREADY_APPROVED', 'Your rider account is already approved');
+    }
+
+    if (input.vehicleType !== 'bicycle') {
+      if (!input.vehicleNumber) {
+        throw AppError.badRequest('VEHICLE_NUMBER_REQUIRED', 'Vehicle registration number is required for motorized vehicles');
+      }
+      if (!input.licenseNumber) {
+        throw AppError.badRequest('LICENSE_NUMBER_REQUIRED', 'Driving licence number is required for motorized vehicles');
+      }
+    }
+
+    // Verify KYC document uploads exist in storage if provided
+    if (input.aadhaarFrontPath && !(await this.storage.exists('kyc-documents', input.aadhaarFrontPath))) {
+      throw AppError.badRequest('AADHAAR_DOC_NOT_FOUND', 'Aadhaar document was not found in storage');
+    }
+    if (input.licenseFrontPath && !(await this.storage.exists('kyc-documents', input.licenseFrontPath))) {
+      throw AppError.badRequest('LICENSE_DOC_NOT_FOUND', 'Driving licence document was not found in storage');
+    }
+
+    if (existing) {
+      // Re-submitting existing application
+      await this.resubmit(userId, input);
+      return this.profile(userId);
+    }
+
     await this.db.transaction().execute(async (tx) => {
-      const existing = await tx
-        .selectFrom('riders')
-        .select('id')
-        .where('id', '=', userId)
-        .executeTakeFirst();
-      if (existing) throw AppError.conflict('ALREADY_APPLIED', 'You have already applied');
       await tx
         .updateTable('profiles')
         .set({ full_name: input.fullName })
         .where('id', '=', userId)
         .execute();
+
       await tx
         .insertInto('riders')
         .values({
@@ -57,10 +92,111 @@ export class RidersService {
           vehicle_type: input.vehicleType,
           vehicle_number: input.vehicleNumber ?? null,
           license_number: input.licenseNumber ?? null,
+          license_expiry_date: input.licenseExpiryDate ? new Date(input.licenseExpiryDate) : null,
+          license_front_path: input.licenseFrontPath ?? null,
+          license_back_path: input.licenseBackPath ?? null,
+          rc_number: input.vehicleNumber ?? null,
+          rc_document_path: input.rcDocumentPath ?? null,
+          insurance_policy_number: input.insurancePolicyNumber ?? null,
+          insurance_expiry_date: input.insuranceExpiryDate ? new Date(input.insuranceExpiryDate) : null,
+          dob: new Date(input.dob),
+          gender: input.gender ?? null,
+          current_address: input.currentAddress,
+          emergency_contact_name: input.emergencyContactName,
+          emergency_contact_phone: input.emergencyContactPhone,
+          emergency_contact_relation: input.emergencyContactRelation,
+          aadhaar_number: input.aadhaarNumber ?? null,
+          aadhaar_front_path: input.aadhaarFrontPath ?? null,
+          aadhaar_back_path: input.aadhaarBackPath ?? null,
+          pan_number: input.panNumber ?? null,
+          pan_card_path: input.panCardPath ?? null,
+          bank_account_number: input.bankAccountNumber,
+          bank_ifsc: input.bankIfsc,
+          bank_beneficiary_name: input.bankBeneficiaryName,
+          bank_name: input.bankName,
+          bank_cheque_document_path: input.bankChequeDocumentPath ?? null,
+          kyc_status: 'pending',
+          rejection_reason: null,
         })
         .execute();
+
       await this.users.addRole(userId, 'rider', tx);
     });
+    return this.profile(userId);
+  }
+
+  async resubmit(userId: string, input: RiderResubmitDto): Promise<RiderProfileDto> {
+    const existing = await this.db
+      .selectFrom('riders')
+      .selectAll()
+      .where('id', '=', userId)
+      .executeTakeFirst();
+    if (!existing) throw AppError.notFound('Rider profile');
+
+    if (existing.kyc_status === 'approved') {
+      throw AppError.conflict('ALREADY_APPROVED', 'Your rider account is already approved');
+    }
+
+    await this.db.transaction().execute(async (tx) => {
+      if (input.fullName) {
+        await tx
+          .updateTable('profiles')
+          .set({ full_name: input.fullName })
+          .where('id', '=', userId)
+          .execute();
+      }
+
+      await tx
+        .updateTable('riders')
+        .set({
+          ...(input.vehicleType !== undefined && { vehicle_type: input.vehicleType }),
+          ...(input.vehicleNumber !== undefined && { vehicle_number: input.vehicleNumber }),
+          ...(input.licenseNumber !== undefined && { license_number: input.licenseNumber }),
+          ...(input.licenseExpiryDate !== undefined && {
+            license_expiry_date: input.licenseExpiryDate ? new Date(input.licenseExpiryDate) : null,
+          }),
+          ...(input.licenseFrontPath !== undefined && { license_front_path: input.licenseFrontPath }),
+          ...(input.licenseBackPath !== undefined && { license_back_path: input.licenseBackPath }),
+          ...(input.rcDocumentPath !== undefined && { rc_document_path: input.rcDocumentPath }),
+          ...(input.insurancePolicyNumber !== undefined && {
+            insurance_policy_number: input.insurancePolicyNumber,
+          }),
+          ...(input.insuranceExpiryDate !== undefined && {
+            insurance_expiry_date: input.insuranceExpiryDate ? new Date(input.insuranceExpiryDate) : null,
+          }),
+          ...(input.dob !== undefined && { dob: input.dob ? new Date(input.dob) : null }),
+          ...(input.gender !== undefined && { gender: input.gender }),
+          ...(input.currentAddress !== undefined && { current_address: input.currentAddress }),
+          ...(input.emergencyContactName !== undefined && {
+            emergency_contact_name: input.emergencyContactName,
+          }),
+          ...(input.emergencyContactPhone !== undefined && {
+            emergency_contact_phone: input.emergencyContactPhone,
+          }),
+          ...(input.emergencyContactRelation !== undefined && {
+            emergency_contact_relation: input.emergencyContactRelation,
+          }),
+          ...(input.aadhaarNumber !== undefined && { aadhaar_number: input.aadhaarNumber }),
+          ...(input.aadhaarFrontPath !== undefined && { aadhaar_front_path: input.aadhaarFrontPath }),
+          ...(input.aadhaarBackPath !== undefined && { aadhaar_back_path: input.aadhaarBackPath }),
+          ...(input.panNumber !== undefined && { pan_number: input.panNumber }),
+          ...(input.panCardPath !== undefined && { pan_card_path: input.panCardPath }),
+          ...(input.bankAccountNumber !== undefined && { bank_account_number: input.bankAccountNumber }),
+          ...(input.bankIfsc !== undefined && { bank_ifsc: input.bankIfsc }),
+          ...(input.bankBeneficiaryName !== undefined && {
+            bank_beneficiary_name: input.bankBeneficiaryName,
+          }),
+          ...(input.bankName !== undefined && { bank_name: input.bankName }),
+          ...(input.bankChequeDocumentPath !== undefined && {
+            bank_cheque_document_path: input.bankChequeDocumentPath,
+          }),
+          kyc_status: 'pending',
+          rejection_reason: null,
+        })
+        .where('id', '=', userId)
+        .execute();
+    });
+
     return this.profile(userId);
   }
 
@@ -80,6 +216,32 @@ export class RidersService {
       kycStatus: r.kyc_status,
       vehicleType: r.vehicle_type,
       vehicleNumber: r.vehicle_number,
+      licenseNumber: r.license_number,
+      licenseExpiryDate: r.license_expiry_date ? new Date(r.license_expiry_date).toISOString().slice(0, 10) : null,
+      licenseFrontPath: r.license_front_path,
+      licenseBackPath: r.license_back_path,
+      rcNumber: r.rc_number,
+      rcDocumentPath: r.rc_document_path,
+      insurancePolicyNumber: r.insurance_policy_number,
+      insuranceExpiryDate: r.insurance_expiry_date ? new Date(r.insurance_expiry_date).toISOString().slice(0, 10) : null,
+      dob: r.dob ? new Date(r.dob).toISOString().slice(0, 10) : null,
+      gender: r.gender,
+      currentAddress: r.current_address,
+      emergencyContactName: r.emergency_contact_name,
+      emergencyContactPhone: r.emergency_contact_phone,
+      emergencyContactRelation: r.emergency_contact_relation,
+      aadhaarNumber: r.aadhaar_number ? `••••••••${r.aadhaar_number.slice(-4)}` : null,
+      aadhaarFrontPath: r.aadhaar_front_path,
+      aadhaarBackPath: r.aadhaar_back_path,
+      panNumber: r.pan_number,
+      panCardPath: r.pan_card_path,
+      bankAccountNumber: r.bank_account_number ? `••••${r.bank_account_number.slice(-4)}` : null,
+      bankIfsc: r.bank_ifsc,
+      bankBeneficiaryName: r.bank_beneficiary_name,
+      bankName: r.bank_name,
+      bankChequeDocumentPath: r.bank_cheque_document_path,
+      rejectionReason: r.rejection_reason,
+      verifiedAt: r.verified_at ? r.verified_at.toISOString() : null,
       isOnline: r.is_online,
       currentOrderId: r.current_order_id,
       cashInHandPaise: r.cash_in_hand_paise,

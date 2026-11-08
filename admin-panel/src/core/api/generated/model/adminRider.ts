@@ -18,6 +18,58 @@ export interface AdminRider {
   vehicleNumber: string | null;
   /** @nullable */
   licenseNumber: string | null;
+  /** @nullable */
+  licenseExpiryDate: string | null;
+  /** @nullable */
+  licenseFrontPath: string | null;
+  /** @nullable */
+  licenseBackPath: string | null;
+  /** @nullable */
+  rcNumber: string | null;
+  /** @nullable */
+  rcDocumentPath: string | null;
+  /** @nullable */
+  insurancePolicyNumber: string | null;
+  /** @nullable */
+  insuranceExpiryDate: string | null;
+  /** @nullable */
+  dob: string | null;
+  /** @nullable */
+  gender: string | null;
+  /** @nullable */
+  currentAddress: string | null;
+  /** @nullable */
+  emergencyContactName: string | null;
+  /** @nullable */
+  emergencyContactPhone: string | null;
+  /** @nullable */
+  emergencyContactRelation: string | null;
+  /** @nullable */
+  aadhaarNumber: string | null;
+  /** @nullable */
+  aadhaarFrontPath: string | null;
+  /** @nullable */
+  aadhaarBackPath: string | null;
+  /** @nullable */
+  panNumber: string | null;
+  /** @nullable */
+  panCardPath: string | null;
+  /** @nullable */
+  bankAccountNumber: string | null;
+  /** @nullable */
+  bankIfsc: string | null;
+  /** @nullable */
+  bankBeneficiaryName: string | null;
+  /** @nullable */
+  bankName: string | null;
+  /** @nullable */
+  bankChequeDocumentPath: string | null;
+  /** @nullable */
+  rejectionReason: string | null;
+  /** @nullable */
+  verifiedAt: string | null;
+  /** @nullable */
+  verifiedBy: string | null;
   kycStatus: AdminRiderKycStatus;
   isOnline: boolean;
   /** @nullable */

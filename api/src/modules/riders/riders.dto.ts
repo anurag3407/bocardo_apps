@@ -7,12 +7,92 @@ import {
   OrderStatusSchema,
 } from '../orders/orders.dto';
 
+export const AadhaarRegex = /^\d{12}$/;
+export const PanRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+export const IfscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+export const VehicleNumberRegex = /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4}$/i;
+export const DlRegex = /^[A-Z]{2}[-0-9A-Z\s]{8,18}$/i;
+
 export class RiderApplyDto extends createZodDto(
   z.object({
     fullName: z.string().trim().min(2).max(80),
+    dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'DOB must be YYYY-MM-DD'),
+    gender: z.enum(['male', 'female', 'other']).optional(),
+    currentAddress: z.string().trim().min(5).max(250),
+    // Emergency contact
+    emergencyContactName: z.string().trim().min(2).max(80),
+    emergencyContactPhone: z.string().trim().min(10).max(15),
+    emergencyContactRelation: z.string().trim().min(2).max(40),
+    // Vehicle & driving
     vehicleType: z.enum(['bicycle', 'scooter', 'motorcycle', 'ev']),
-    vehicleNumber: z.string().trim().max(20).optional(),
-    licenseNumber: z.string().trim().max(30).optional(),
+    vehicleNumber: z.string().trim().toUpperCase().regex(VehicleNumberRegex, 'Invalid vehicle number').optional(),
+    licenseNumber: z.string().trim().toUpperCase().regex(DlRegex, 'Invalid driving licence number').optional(),
+    licenseExpiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expiry must be YYYY-MM-DD').optional(),
+    licenseFrontPath: z.string().trim().optional(),
+    licenseBackPath: z.string().trim().optional(),
+    rcDocumentPath: z.string().trim().optional(),
+    insurancePolicyNumber: z.string().trim().optional(),
+    insuranceExpiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expiry must be YYYY-MM-DD').optional(),
+    // Identity verification
+    aadhaarNumber: z.string().trim().regex(AadhaarRegex, 'Aadhaar must be 12 digits').optional(),
+    aadhaarFrontPath: z.string().trim().optional(),
+    aadhaarBackPath: z.string().trim().optional(),
+    panNumber: z.string().trim().toUpperCase().regex(PanRegex, 'Invalid PAN format').optional(),
+    panCardPath: z.string().trim().optional(),
+    // Payout banking
+    bankAccountNumber: z.string().trim().min(8).max(30),
+    bankIfsc: z.string().trim().toUpperCase().regex(IfscRegex, 'Invalid IFSC code (e.g. HDFC0001234)'),
+    bankBeneficiaryName: z.string().trim().min(2).max(120),
+    bankName: z.string().trim().min(2).max(100),
+    bankChequeDocumentPath: z.string().trim().optional(),
+  }).superRefine((data, ctx) => {
+    if (data.vehicleType !== 'bicycle') {
+      if (!data.vehicleNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Vehicle registration number is required for motorized vehicles',
+          path: ['vehicleNumber'],
+        });
+      }
+      if (!data.licenseNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Driving licence number is required for motorized vehicles',
+          path: ['licenseNumber'],
+        });
+      }
+    }
+  }),
+) {}
+
+export class RiderResubmitDto extends createZodDto(
+  z.object({
+    fullName: z.string().trim().min(2).max(80).optional(),
+    dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'DOB must be YYYY-MM-DD').optional(),
+    gender: z.enum(['male', 'female', 'other']).optional(),
+    currentAddress: z.string().trim().min(5).max(250).optional(),
+    emergencyContactName: z.string().trim().min(2).max(80).optional(),
+    emergencyContactPhone: z.string().trim().min(10).max(15).optional(),
+    emergencyContactRelation: z.string().trim().min(2).max(40).optional(),
+    vehicleType: z.enum(['bicycle', 'scooter', 'motorcycle', 'ev']).optional(),
+    vehicleNumber: z.string().trim().toUpperCase().regex(VehicleNumberRegex, 'Invalid vehicle number').optional(),
+    licenseNumber: z.string().trim().toUpperCase().regex(DlRegex, 'Invalid driving licence number').optional(),
+    licenseExpiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expiry must be YYYY-MM-DD').optional(),
+    licenseFrontPath: z.string().trim().optional(),
+    licenseBackPath: z.string().trim().optional(),
+    rcDocumentPath: z.string().trim().optional(),
+    insurancePolicyNumber: z.string().trim().optional(),
+    insuranceExpiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expiry must be YYYY-MM-DD').optional(),
+    aadhaarNumber: z.string().trim().regex(AadhaarRegex, 'Aadhaar must be 12 digits').optional(),
+    aadhaarFrontPath: z.string().trim().optional(),
+    aadhaarBackPath: z.string().trim().optional(),
+    panNumber: z.string().trim().toUpperCase().regex(PanRegex, 'Invalid PAN format').optional(),
+    panCardPath: z.string().trim().optional(),
+    bankAccountNumber: z.string().trim().min(8).max(30).optional(),
+    bankIfsc: z.string().trim().toUpperCase().regex(IfscRegex, 'Invalid IFSC code').optional(),
+    bankBeneficiaryName: z.string().trim().min(2).max(120).optional(),
+    bankName: z.string().trim().min(2).max(100).optional(),
+    bankChequeDocumentPath: z.string().trim().optional(),
   }),
 ) {}
 
@@ -24,6 +104,32 @@ export const RiderProfileSchema = z
     kycStatus: z.enum(['pending', 'approved', 'rejected', 'suspended']),
     vehicleType: z.enum(['bicycle', 'scooter', 'motorcycle', 'ev']),
     vehicleNumber: z.string().nullable(),
+    licenseNumber: z.string().nullable(),
+    licenseExpiryDate: z.string().nullable(),
+    licenseFrontPath: z.string().nullable(),
+    licenseBackPath: z.string().nullable(),
+    rcNumber: z.string().nullable(),
+    rcDocumentPath: z.string().nullable(),
+    insurancePolicyNumber: z.string().nullable(),
+    insuranceExpiryDate: z.string().nullable(),
+    dob: z.string().nullable(),
+    gender: z.string().nullable(),
+    currentAddress: z.string().nullable(),
+    emergencyContactName: z.string().nullable(),
+    emergencyContactPhone: z.string().nullable(),
+    emergencyContactRelation: z.string().nullable(),
+    aadhaarNumber: z.string().nullable(),
+    aadhaarFrontPath: z.string().nullable(),
+    aadhaarBackPath: z.string().nullable(),
+    panNumber: z.string().nullable(),
+    panCardPath: z.string().nullable(),
+    bankAccountNumber: z.string().nullable(),
+    bankIfsc: z.string().nullable(),
+    bankBeneficiaryName: z.string().nullable(),
+    bankName: z.string().nullable(),
+    bankChequeDocumentPath: z.string().nullable(),
+    rejectionReason: z.string().nullable(),
+    verifiedAt: z.string().nullable(),
     isOnline: z.boolean(),
     currentOrderId: z.string().nullable(),
     cashInHandPaise: z.number().int(),

@@ -991,6 +991,42 @@
         ]
       }
     },
+    "/rider/resubmit": {
+      "post": {
+        "operationId": "Riders_resubmit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiderResubmitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiderProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "rider"
+        ]
+      }
+    },
     "/rider/me": {
       "get": {
         "operationId": "Riders_me",
@@ -3626,6 +3662,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminRiderDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/riders/{id}/documents": {
+      "get": {
+        "operationId": "AdminAccounts_riderDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiderDocumentsDto"
                 }
               }
             }
@@ -6535,6 +6606,38 @@
             "minLength": 2,
             "maxLength": 80
           },
+          "dob": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female",
+              "other"
+            ]
+          },
+          "currentAddress": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 250
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 15
+          },
+          "emergencyContactRelation": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 40
+          },
           "vehicleType": {
             "type": "string",
             "enum": [
@@ -6546,16 +6649,84 @@
           },
           "vehicleNumber": {
             "type": "string",
-            "maxLength": 20
+            "pattern": "^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4}$"
           },
           "licenseNumber": {
             "type": "string",
+            "pattern": "^[A-Z]{2}[-0-9A-Z\\s]{8,18}$"
+          },
+          "licenseExpiryDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "licenseFrontPath": {
+            "type": "string"
+          },
+          "licenseBackPath": {
+            "type": "string"
+          },
+          "rcDocumentPath": {
+            "type": "string"
+          },
+          "insurancePolicyNumber": {
+            "type": "string"
+          },
+          "insuranceExpiryDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "aadhaarNumber": {
+            "type": "string",
+            "pattern": "^\\d{12}$"
+          },
+          "aadhaarFrontPath": {
+            "type": "string"
+          },
+          "aadhaarBackPath": {
+            "type": "string"
+          },
+          "panNumber": {
+            "type": "string",
+            "pattern": "^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+          },
+          "panCardPath": {
+            "type": "string"
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "minLength": 8,
             "maxLength": 30
+          },
+          "bankIfsc": {
+            "type": "string",
+            "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$"
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "bankName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "bankChequeDocumentPath": {
+            "type": "string"
           }
         },
         "required": [
           "fullName",
-          "vehicleType"
+          "dob",
+          "currentAddress",
+          "emergencyContactName",
+          "emergencyContactPhone",
+          "emergencyContactRelation",
+          "vehicleType",
+          "bankAccountNumber",
+          "bankIfsc",
+          "bankBeneficiaryName",
+          "bankName"
         ]
       },
       "RiderProfile": {
@@ -6594,6 +6765,110 @@
             "type": "string",
             "nullable": true
           },
+          "licenseNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenseExpiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenseFrontPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenseBackPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "rcNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "rcDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "insurancePolicyNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceExpiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "dob": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactRelation": {
+            "type": "string",
+            "nullable": true
+          },
+          "aadhaarNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "aadhaarFrontPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "aadhaarBackPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "panNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "panCardPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankIfsc": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankChequeDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
           "isOnline": {
             "type": "boolean"
           },
@@ -6625,6 +6900,32 @@
           "kycStatus",
           "vehicleType",
           "vehicleNumber",
+          "licenseNumber",
+          "licenseExpiryDate",
+          "licenseFrontPath",
+          "licenseBackPath",
+          "rcNumber",
+          "rcDocumentPath",
+          "insurancePolicyNumber",
+          "insuranceExpiryDate",
+          "dob",
+          "gender",
+          "currentAddress",
+          "emergencyContactName",
+          "emergencyContactPhone",
+          "emergencyContactRelation",
+          "aadhaarNumber",
+          "aadhaarFrontPath",
+          "aadhaarBackPath",
+          "panNumber",
+          "panCardPath",
+          "bankAccountNumber",
+          "bankIfsc",
+          "bankBeneficiaryName",
+          "bankName",
+          "bankChequeDocumentPath",
+          "rejectionReason",
+          "verifiedAt",
           "isOnline",
           "currentOrderId",
           "cashInHandPaise",
@@ -6636,6 +6937,124 @@
       },
       "RiderProfileDto": {
         "$ref": "#/components/schemas/RiderProfile"
+      },
+      "RiderResubmitDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "dob": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female",
+              "other"
+            ]
+          },
+          "currentAddress": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 250
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 15
+          },
+          "emergencyContactRelation": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 40
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "bicycle",
+              "scooter",
+              "motorcycle",
+              "ev"
+            ]
+          },
+          "vehicleNumber": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4}$"
+          },
+          "licenseNumber": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}[-0-9A-Z\\s]{8,18}$"
+          },
+          "licenseExpiryDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "licenseFrontPath": {
+            "type": "string"
+          },
+          "licenseBackPath": {
+            "type": "string"
+          },
+          "rcDocumentPath": {
+            "type": "string"
+          },
+          "insurancePolicyNumber": {
+            "type": "string"
+          },
+          "insuranceExpiryDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "aadhaarNumber": {
+            "type": "string",
+            "pattern": "^\\d{12}$"
+          },
+          "aadhaarFrontPath": {
+            "type": "string"
+          },
+          "aadhaarBackPath": {
+            "type": "string"
+          },
+          "panNumber": {
+            "type": "string",
+            "pattern": "^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+          },
+          "panCardPath": {
+            "type": "string"
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 30
+          },
+          "bankIfsc": {
+            "type": "string",
+            "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$"
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "bankName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "bankChequeDocumentPath": {
+            "type": "string"
+          }
+        }
       },
       "GoOnlineDto": {
         "type": "object",
@@ -9624,6 +10043,110 @@
             "type": "string",
             "nullable": true
           },
+          "licenseExpiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenseFrontPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenseBackPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "rcNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "rcDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "insurancePolicyNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceExpiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "dob": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactRelation": {
+            "type": "string",
+            "nullable": true
+          },
+          "aadhaarNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "aadhaarFrontPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "aadhaarBackPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "panNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "panCardPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankIfsc": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankBeneficiaryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankChequeDocumentPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedBy": {
+            "type": "string",
+            "nullable": true
+          },
           "kycStatus": {
             "type": "string",
             "enum": [
@@ -9676,6 +10199,32 @@
           "vehicleType",
           "vehicleNumber",
           "licenseNumber",
+          "licenseExpiryDate",
+          "licenseFrontPath",
+          "licenseBackPath",
+          "rcNumber",
+          "rcDocumentPath",
+          "insurancePolicyNumber",
+          "insuranceExpiryDate",
+          "dob",
+          "gender",
+          "currentAddress",
+          "emergencyContactName",
+          "emergencyContactPhone",
+          "emergencyContactRelation",
+          "aadhaarNumber",
+          "aadhaarFrontPath",
+          "aadhaarBackPath",
+          "panNumber",
+          "panCardPath",
+          "bankAccountNumber",
+          "bankIfsc",
+          "bankBeneficiaryName",
+          "bankName",
+          "bankChequeDocumentPath",
+          "rejectionReason",
+          "verifiedAt",
+          "verifiedBy",
           "kycStatus",
           "isOnline",
           "currentOrderId",
@@ -9711,6 +10260,49 @@
       },
       "AdminRiderDto": {
         "$ref": "#/components/schemas/AdminRider"
+      },
+      "RiderDocumentsDto": {
+        "type": "object",
+        "properties": {
+          "aadhaarFrontUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "aadhaarBackUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "panCardUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenseFrontUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "licenseBackUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "rcDocumentUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "chequeUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "aadhaarFrontUrl",
+          "aadhaarBackUrl",
+          "panCardUrl",
+          "licenseFrontUrl",
+          "licenseBackUrl",
+          "rcDocumentUrl",
+          "chequeUrl"
+        ],
+        "additionalProperties": false
       },
       "RiderKycDto": {
         "type": "object",

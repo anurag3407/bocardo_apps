@@ -20,6 +20,7 @@ import {
   RiderOrderDto,
   RiderOrderPageDto,
   RiderProfileDto,
+  RiderResubmitDto,
   SosDto,
   UndeliverableDto,
 } from './riders.dto';
@@ -41,6 +42,12 @@ export class RidersController {
   @ZodResponse({ type: RiderProfileDto, status: 201 })
   apply(@CurrentUser() user: AuthUser, @Body() body: RiderApplyDto) {
     return this.riders.apply(user.id, body);
+  }
+
+  @Post('resubmit')
+  @ZodResponse({ type: RiderProfileDto, status: 200 })
+  resubmit(@CurrentUser() user: AuthUser, @Body() body: RiderResubmitDto) {
+    return this.riders.resubmit(user.id, body);
   }
 
   @Roles('rider')

@@ -258,6 +258,32 @@ export const AdminRiderSchema = z
     vehicleType: z.string(),
     vehicleNumber: z.string().nullable(),
     licenseNumber: z.string().nullable(),
+    licenseExpiryDate: z.string().nullable(),
+    licenseFrontPath: z.string().nullable(),
+    licenseBackPath: z.string().nullable(),
+    rcNumber: z.string().nullable(),
+    rcDocumentPath: z.string().nullable(),
+    insurancePolicyNumber: z.string().nullable(),
+    insuranceExpiryDate: z.string().nullable(),
+    dob: z.string().nullable(),
+    gender: z.string().nullable(),
+    currentAddress: z.string().nullable(),
+    emergencyContactName: z.string().nullable(),
+    emergencyContactPhone: z.string().nullable(),
+    emergencyContactRelation: z.string().nullable(),
+    aadhaarNumber: z.string().nullable(),
+    aadhaarFrontPath: z.string().nullable(),
+    aadhaarBackPath: z.string().nullable(),
+    panNumber: z.string().nullable(),
+    panCardPath: z.string().nullable(),
+    bankAccountNumber: z.string().nullable(),
+    bankIfsc: z.string().nullable(),
+    bankBeneficiaryName: z.string().nullable(),
+    bankName: z.string().nullable(),
+    bankChequeDocumentPath: z.string().nullable(),
+    rejectionReason: z.string().nullable(),
+    verifiedAt: z.string().nullable(),
+    verifiedBy: z.string().nullable(),
     kycStatus: z.enum(['pending', 'approved', 'rejected', 'suspended']),
     isOnline: z.boolean(),
     currentOrderId: z.string().nullable(),
@@ -270,6 +296,18 @@ export const AdminRiderSchema = z
     createdAt: z.string(),
   })
   .meta({ id: 'AdminRider' });
+
+export class RiderDocumentsDto extends createZodDto(
+  z.object({
+    aadhaarFrontUrl: z.string().nullable(),
+    aadhaarBackUrl: z.string().nullable(),
+    panCardUrl: z.string().nullable(),
+    licenseFrontUrl: z.string().nullable(),
+    licenseBackUrl: z.string().nullable(),
+    rcDocumentUrl: z.string().nullable(),
+    chequeUrl: z.string().nullable(),
+  }),
+) {}
 
 export class AdminRiderPageDto extends createZodDto(Page(AdminRiderSchema)) {}
 export class AdminRiderDto extends createZodDto(AdminRiderSchema.clone()) {}

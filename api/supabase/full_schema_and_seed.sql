@@ -288,6 +288,32 @@ create table public.riders (
   vehicle_type        public.vehicle_type not null,
   vehicle_number      text,
   license_number      text,
+  license_expiry_date date,
+  license_front_path  text,
+  license_back_path   text,
+  rc_number           text,
+  rc_document_path    text,
+  insurance_policy_number text,
+  insurance_expiry_date date,
+  dob                 date,
+  gender              text,
+  current_address     text,
+  emergency_contact_name text,
+  emergency_contact_phone text,
+  emergency_contact_relation text,
+  aadhaar_number      text,
+  aadhaar_front_path  text,
+  aadhaar_back_path   text,
+  pan_number          text,
+  pan_card_path       text,
+  bank_account_number text,
+  bank_ifsc           text,
+  bank_beneficiary_name text,
+  bank_name           text,
+  bank_cheque_document_path text,
+  rejection_reason    text,
+  verified_at         timestamptz,
+  verified_by         uuid references public.profiles (id),
   kyc_status          public.kyc_status not null default 'pending',
   city_id             uuid references public.cities (id),
   is_online           boolean not null default false,
@@ -306,6 +332,7 @@ create table public.riders (
   updated_at          timestamptz not null default now()
 );
 create index riders_online_idx on public.riders (city_id) where is_online;
+create index riders_kyc_created_idx on public.riders (kyc_status, created_at desc);
 create trigger riders_updated_at before update on public.riders
   for each row execute function public.set_updated_at();
 

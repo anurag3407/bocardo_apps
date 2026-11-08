@@ -66,6 +66,7 @@ import type {
   RestaurantDocumentsDto,
   RestaurantStatusDto,
   RestaurantTermsDto,
+  RiderDocumentsDto,
   RiderKycDto,
   RunPayoutsResultDto,
   SetAppConfigDto,
@@ -1381,6 +1382,100 @@ export function useAdminAccountsRider<TData = Awaited<ReturnType<typeof adminAcc
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAdminAccountsRiderQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getAdminAccountsRiderDocumentsUrl = (id: string,) => {
+
+
+
+
+  return `/admin/riders/${id}/documents`
+}
+
+export const adminAccountsRiderDocuments = async (id: string, options?: Parameters<typeof httpClient>[1]): Promise<RiderDocumentsDto> => {
+
+  return httpClient<RiderDocumentsDto>(getAdminAccountsRiderDocumentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminAccountsRiderDocumentsQueryKey = (id: string,) => {
+    return [
+    `/admin/riders/${id}/documents`
+    ] as const;
+    }
+
+
+export const getAdminAccountsRiderDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError = ErrorType<RiderDocumentsDto>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminAccountsRiderDocumentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>> = ({ signal }) => adminAccountsRiderDocuments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AdminAccountsRiderDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>>
+export type AdminAccountsRiderDocumentsQueryError = ErrorType<RiderDocumentsDto>
+
+
+export function useAdminAccountsRiderDocuments<TData = Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError = ErrorType<RiderDocumentsDto>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminAccountsRiderDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof adminAccountsRiderDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminAccountsRiderDocuments<TData = Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError = ErrorType<RiderDocumentsDto>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminAccountsRiderDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof adminAccountsRiderDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminAccountsRiderDocuments<TData = Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError = ErrorType<RiderDocumentsDto>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAdminAccountsRiderDocuments<TData = Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError = ErrorType<RiderDocumentsDto>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminAccountsRiderDocuments>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAdminAccountsRiderDocumentsQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -11,12 +11,15 @@ import { useRealtime } from '@/core/realtime/use-realtime';
 import { TripPanel } from '@/features/trip/TripPanel';
 import { formatPaise } from '@/lib/format';
 import { Card, elevation, EmptyState, ErrorState, Icon, Loading, Logo, radius, Row, Screen, spacing, Text, Toggle, useTheme } from '@/ui';
+import { ApplyScreen } from '../onboarding/ApplyScreen';
+import { RiderKycStatusView } from '../onboarding/RiderKycStatusView';
 import { OfferModal } from './OfferModal';
 
 export function DutyScreen() {
   const t = useTheme();
   const qc = useQueryClient();
   const me = useRidersMe();
+  const [editingKyc, setEditingKyc] = useState(false);
   const online = !!me.data?.isOnline;
   const active = useRidersActive({ query: { enabled: online, refetchInterval: 20_000 } });
   const hasTrip = !!active.data?.order;
@@ -42,14 +45,24 @@ export function DutyScreen() {
   const rider = me.data;
 
   if (rider.kycStatus !== 'approved') {
-    return (
-      <Screen>
-        <EmptyState
-          icon={rider.kycStatus === 'pending' ? 'hourglass-outline' : 'alert-circle-outline'}
-          title={rider.kycStatus === 'pending' ? 'Verification in progress' : `Account ${rider.kycStatus}`}
-          message={rider.kycStatus === 'pending' ? 'We are verifying your documents. You can go online once approved.' : 'Contact rider support for help.'}
+    if (editingKyc) {
+      return (
+        <ApplyScreen
+          initialProfile={rider}
+          onComplete={() => {
+            setEditingKyc(false);
+            void me.refetch();
+          }}
+          onCancel={() => setEditingKyc(false)}
         />
-      </Screen>
+      );
+    }
+    return (
+      <RiderKycStatusView
+        rider={rider}
+        onRefresh={() => void me.refetch()}
+        onEdit={() => setEditingKyc(true)}
+      />
     );
   }
 

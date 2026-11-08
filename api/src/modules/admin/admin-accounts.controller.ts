@@ -30,6 +30,7 @@ import {
   RestaurantDocumentsDto,
   RestaurantStatusDto,
   RestaurantTermsDto,
+  RiderDocumentsDto,
   RiderKycDto,
 } from './admin.dto';
 import { AdminAccountsService } from './admin-accounts.service';
@@ -103,6 +104,13 @@ export class AdminAccountsController {
   @ZodResponse({ type: AdminRiderDto })
   rider(@Param('id', ParseUUIDPipe) id: string) {
     return this.accounts.rider(id);
+  }
+
+  @AdminRoles('ops', 'support', 'finance')
+  @Get('riders/:id/documents')
+  @ZodResponse({ type: RiderDocumentsDto })
+  riderDocuments(@Param('id', ParseUUIDPipe) id: string) {
+    return this.accounts.getRiderDocuments(id);
   }
 
   @AdminRoles('ops')

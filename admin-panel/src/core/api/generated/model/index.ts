@@ -104,6 +104,7 @@ export * from './restaurantDocumentsDto';
 export * from './restaurantStatusDto';
 export * from './restaurantStatusDtoStatus';
 export * from './restaurantTermsDto';
+export * from './riderDocumentsDto';
 export * from './riderInfo';
 export * from './riderKycDto';
 export * from './riderKycDtoStatus';

@@ -19,6 +19,7 @@ import type {
   RestaurantDocumentsDto,
   RestaurantStatusDto,
   RestaurantTermsDto,
+  RiderDocumentsDto,
   RiderKycDto,
 } from './admin.dto';
 
@@ -194,7 +195,13 @@ export class AdminAccountsService {
         .updateTable('riders')
         .set({
           kyc_status: input.status,
-          ...(input.status !== 'approved' ? { is_online: false } : {}),
+          ...(input.status === 'approved'
+            ? { rejection_reason: null, verified_at: new Date(), verified_by: actorId }
+            : {
+                is_online: false,
+                rejection_reason: input.reason ?? null,
+                ...(input.status === 'rejected' ? { verified_at: new Date(), verified_by: actorId } : {}),
+              }),
         })
         .where('id', '=', id)
         .returning(['city_id'])
@@ -211,7 +218,12 @@ export class AdminAccountsService {
         userId: id,
         app: 'rider',
         message: {
-          title: input.status === 'approved' ? 'You are approved!' : `Account ${input.status}`,
+          title:
+            input.status === 'approved'
+              ? 'You are approved!'
+              : input.status === 'rejected'
+                ? 'Action Required: Rider Application'
+                : `Account ${input.status}`,
           body:
             input.status === 'approved'
               ? 'Go online to start receiving delivery requests.'
@@ -222,6 +234,49 @@ export class AdminAccountsService {
     });
     if (input.status !== 'approved' && rider.city_id) await this.pool.goOffline(id, rider.city_id);
     return this.rider(id);
+  }
+
+  async getRiderDocuments(id: string): Promise<RiderDocumentsDto> {
+    const r = await this.db
+      .selectFrom('riders')
+      .select([
+        'aadhaar_front_path',
+        'aadhaar_back_path',
+        'pan_card_path',
+        'license_front_path',
+        'license_back_path',
+        'rc_document_path',
+        'bank_cheque_document_path',
+      ])
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!r) throw AppError.notFound('Rider');
+    const [
+      aadhaarFrontUrl,
+      aadhaarBackUrl,
+      panCardUrl,
+      licenseFrontUrl,
+      licenseBackUrl,
+      rcDocumentUrl,
+      chequeUrl,
+    ] = await Promise.all([
+      r.aadhaar_front_path ? this.storage.signedUrl('kyc-documents', r.aadhaar_front_path, 3600) : null,
+      r.aadhaar_back_path ? this.storage.signedUrl('kyc-documents', r.aadhaar_back_path, 3600) : null,
+      r.pan_card_path ? this.storage.signedUrl('kyc-documents', r.pan_card_path, 3600) : null,
+      r.license_front_path ? this.storage.signedUrl('kyc-documents', r.license_front_path, 3600) : null,
+      r.license_back_path ? this.storage.signedUrl('kyc-documents', r.license_back_path, 3600) : null,
+      r.rc_document_path ? this.storage.signedUrl('kyc-documents', r.rc_document_path, 3600) : null,
+      r.bank_cheque_document_path ? this.storage.signedUrl('kyc-documents', r.bank_cheque_document_path, 3600) : null,
+    ]);
+    return {
+      aadhaarFrontUrl,
+      aadhaarBackUrl,
+      panCardUrl,
+      licenseFrontUrl,
+      licenseBackUrl,
+      rcDocumentUrl,
+      chequeUrl,
+    };
   }
 
   // ── Users & admins ──────────────────────────────────────────────────────
@@ -378,6 +433,32 @@ function toAdminRider(r: RiderRow): AdminRiderDto {
     vehicleType: r.vehicle_type,
     vehicleNumber: r.vehicle_number,
     licenseNumber: r.license_number,
+    licenseExpiryDate: r.license_expiry_date ? new Date(r.license_expiry_date).toISOString().slice(0, 10) : null,
+    licenseFrontPath: r.license_front_path,
+    licenseBackPath: r.license_back_path,
+    rcNumber: r.rc_number,
+    rcDocumentPath: r.rc_document_path,
+    insurancePolicyNumber: r.insurance_policy_number,
+    insuranceExpiryDate: r.insurance_expiry_date ? new Date(r.insurance_expiry_date).toISOString().slice(0, 10) : null,
+    dob: r.dob ? new Date(r.dob).toISOString().slice(0, 10) : null,
+    gender: r.gender,
+    currentAddress: r.current_address,
+    emergencyContactName: r.emergency_contact_name,
+    emergencyContactPhone: r.emergency_contact_phone,
+    emergencyContactRelation: r.emergency_contact_relation,
+    aadhaarNumber: r.aadhaar_number,
+    aadhaarFrontPath: r.aadhaar_front_path,
+    aadhaarBackPath: r.aadhaar_back_path,
+    panNumber: r.pan_number,
+    panCardPath: r.pan_card_path,
+    bankAccountNumber: r.bank_account_number,
+    bankIfsc: r.bank_ifsc,
+    bankBeneficiaryName: r.bank_beneficiary_name,
+    bankName: r.bank_name,
+    bankChequeDocumentPath: r.bank_cheque_document_path,
+    rejectionReason: r.rejection_reason,
+    verifiedAt: iso(r.verified_at),
+    verifiedBy: r.verified_by,
     kycStatus: r.kyc_status,
     isOnline: r.is_online,
     currentOrderId: r.current_order_id,
