@@ -51,6 +51,12 @@ max_frequency = "30s"
 919999900002 = "123456"
 919999900003 = "123456"
 
+[auth.sms.twilio_verify]
+enabled = true
+account_sid = "env(TWILIO_ACCOUNT_SID)"
+message_service_sid = "env(TWILIO_MESSAGE_SERVICE_SID)"
+auth_token = "env(TWILIO_AUTH_TOKEN)"
+
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true

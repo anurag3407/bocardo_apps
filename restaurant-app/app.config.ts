@@ -14,7 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Bocardo Partner',
   slug: 'bocardo-restaurant',
-  version: '1.0.0',
+  version: '0.0.1',
   // tablets at the counter are often landscape
   orientation: 'default',
   icon: './assets/images/icon.png',
@@ -31,6 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: 'app.bocardo.restaurant',
+    versionCode: 1,
     ...(existsSync(androidFirebase) ? { googleServicesFile: androidFirebase } : {}),
     // keeps the Supabase session (SQLite) out of adb / cloud backups
     allowBackup: false,
@@ -60,7 +61,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
     '@react-native-firebase/app-check',
-    ['expo-build-properties', { ios: { useFrameworks: 'static' } }],
+    [
+      'expo-build-properties',
+      {
+        ios: { useFrameworks: 'static' },
+        android: {
+          extraProguardRules: [
+            '-keep class com.mapbox.** { *; }',
+            '-dontwarn com.mapbox.**',
+          ].join('\n'),
+        },
+      },
+    ],
     '@rnmapbox/maps',
   ],
   experiments: { typedRoutes: false, reactCompiler: true },

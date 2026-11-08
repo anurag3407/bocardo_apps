@@ -27,5 +27,7 @@ export function useAppConfig() {
     staleTime: 10 * 60_000,
   });
   const current = Constants.expoConfig?.version ?? '0.0.0';
-  return { ...query, updateRequired: query.data ? isOlder(current, query.data.minVersion) : false };
+  // Trial/alpha builds (0.0.x) are distributed via APK trials before Play Store launch and shouldn't be blocked by production 1.0.0 minimums
+  const isTrial = current.startsWith('0.0.') || current === '0.0.0';
+  return { ...query, updateRequired: query.data && !isTrial ? isOlder(current, query.data.minVersion) : false };
 }

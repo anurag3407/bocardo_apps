@@ -32,7 +32,10 @@ let started = false;
 export function startSessionSync() {
   if (started) return;
   started = true;
-  supabase.auth.getSession().then(({ data }) => apply(data.session));
+  supabase.auth
+    .getSession()
+    .then(({ data }) => apply(data.session))
+    .catch(() => apply(null));
   supabase.auth.onAuthStateChange((_event, session) => apply(session));
 }
 
