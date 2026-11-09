@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../auth/supabase';
 
@@ -10,9 +11,11 @@ export type DocumentType = 'fssai' | 'pan' | 'gst' | 'cheque';
  * (FSSAI licence, PAN card, GSTIN certificate, or Cancelled Cheque).
  */
 export async function pickDocumentImage(): Promise<string | null> {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) {
-    throw new Error('Photo library permission is needed to select documents');
+  if (Platform.OS === 'ios') {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      throw new Error('Photo library permission is needed to select documents');
+    }
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({

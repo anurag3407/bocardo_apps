@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Linking, View } from 'react-native';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { errorMessage } from '@/core/api/api-error';
 import { partnerSetBusy, partnerSetHours, partnerUpdate } from '@/core/api/generated/partner/partner';
+import { usersDeleteAccount } from '@/core/api/generated/users/users';
 import { signOut } from '@/core/auth/auth-actions';
-import { Badge, Button, Card, Chip, Divider, IconBadge, Input, ListItem, RatingBadge, Row, Screen, spacing, Text, useTheme } from '@/ui';
+import { Badge, Button, Card, Chip, Divider, IconBadge, Input, ListItem, Logo, RatingBadge, Row, Screen, spacing, Text, useTheme } from '@/ui';
 import { useCurrentRestaurant } from './selected-restaurant';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -36,6 +38,27 @@ export function OutletScreen() {
           .filter(([, h]) => /^\d{2}:\d{2}$/.test(h.opensAt) && /^\d{2}:\d{2}$/.test(h.closesAt))
           .map(([d, h]) => ({ dayOfWeek: Number(d), opensAt: h.opensAt, closesAt: h.closesAt })),
       }).then(() => setHours(null)),
+    );
+
+  const deleteAccount = () =>
+    Alert.alert(
+      'Delete account?',
+      'Your personal profile and partner access will be deleted. Order and transaction records are retained for statutory compliance.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await usersDeleteAccount();
+              await signOut();
+            } catch (e) {
+              Alert.alert('Could not delete', errorMessage(e));
+            }
+          },
+        },
+      ],
     );
 
   return (
@@ -125,9 +148,24 @@ export function OutletScreen() {
         <ListItem icon="time-outline" title="Order history" subtitle="Past and cancelled orders" onPress={() => router.push('/history')} />
         <Divider inset={48} />
         <ListItem icon="chatbubble-ellipses-outline" title="Partner support" subtitle="Payouts, menu, documents" onPress={() => router.push('/support/new')} />
-        <Divider inset={48} />
-        <ListItem icon="log-out-outline" title="Sign out" chevron={false} destructive onPress={() => void signOut()} />
       </Card>
+
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => void Linking.openURL('https://bocardo.app/privacy')} />
+        <Divider inset={48} />
+        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => void Linking.openURL('https://bocardo.app/terms')} />
+      </Card>
+
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        <ListItem icon="log-out-outline" title="Sign out" chevron={false} onPress={() => void signOut()} />
+        <Divider inset={48} />
+        <ListItem icon="trash-outline" title="Delete account" destructive chevron={false} onPress={deleteAccount} />
+      </Card>
+
+      <View style={{ alignItems: 'center', gap: spacing.xs, marginTop: spacing.md, marginBottom: spacing.xl, opacity: 0.8 }}>
+        <Logo size={28} />
+        <Text variant="caption" subtle>Bocardo Partner v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+      </View>
     </Screen>
   );
 }

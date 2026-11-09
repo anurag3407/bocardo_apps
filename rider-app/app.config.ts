@@ -26,7 +26,81 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...(existsSync(iosFirebase) ? { googleServicesFile: iosFirebase } : {}),
     // App Attest for Firebase App Check (OTP abuse protection)
     entitlements: { 'com.apple.developer.devicecheck.appattest-environment': 'production' },
-    infoPlist: { UIBackgroundModes: ['remote-notification', 'location', 'fetch'], ITSAppUsesNonExemptEncryption: false },
+    infoPlist: {
+      UIBackgroundModes: ['remote-notification', 'location', 'fetch'],
+      ITSAppUsesNonExemptEncryption: false,
+      NSLocationWhenInUseUsageDescription: 'Bocardo Rider uses your location to find delivery orders near you.',
+      NSLocationAlwaysAndWhenInUseUsageDescription: 'Bocardo Rider collects your live location in the background during active shifts and deliveries so customers and restaurants can track their order.',
+      NSLocationAlwaysUsageDescription: 'Bocardo Rider needs background location access to route you to customers and restaurants and track active deliveries while the app is minimized.',
+      NSCameraUsageDescription: 'Bocardo Rider uses the camera to capture proof of delivery photos and scan onboarding verification documents.',
+      NSPhotoLibraryUsageDescription: 'Bocardo Rider needs photo library access to upload KYC verification documents.',
+    },
+    privacyManifests: {
+      NSPrivacyTracking: false,
+      NSPrivacyTrackingDomains: [],
+      NSPrivacyAccessedAPITypes: [
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+          NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+          NSPrivacyAccessedAPITypeReasons: ['C617.1', '0A2A.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
+          NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
+          NSPrivacyAccessedAPITypeReasons: ['E174.1'],
+        },
+      ],
+      NSPrivacyCollectedDataTypes: [
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypePreciseLocation',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeCoarseLocation',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypePhoneNumber',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeName',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypePhotosorVideos',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeDeviceID',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeUserID',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+      ],
+    },
   },
   android: {
     package: 'app.bocardo.rider',
@@ -75,7 +149,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     ['expo-audio', { microphonePermission: false, recordAudioAndroid: false }],
-    ['expo-image-picker', { cameraPermission: 'Bocardo Rider uses the camera to photograph delivered packages as proof of delivery.', photosPermission: false, microphonePermission: false }],
+    [
+      'expo-image-picker',
+      {
+        cameraPermission: 'Bocardo Rider uses the camera to photograph delivered packages as proof of delivery and capture KYC documents.',
+        photosPermission: 'Bocardo Rider needs access to your photos to upload KYC documents for verification.',
+        microphonePermission: false,
+      },
+    ],
     // without a monochrome small icon Android renders the launcher icon as a white square
     ['expo-notifications', { color: '#0596D1', icon: './assets/images/android-icon-monochrome.png', sounds: ['./assets/sounds/order_ring.wav'] }],
     '@react-native-firebase/app',

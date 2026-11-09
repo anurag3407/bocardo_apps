@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../auth/supabase';
 
@@ -17,9 +18,11 @@ export type RiderDocumentType =
  * (Aadhaar, PAN, Driving Licence, Vehicle RC, or Cancelled Cheque/Passbook).
  */
 export async function pickDocumentImage(): Promise<string | null> {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) {
-    throw new Error('Photo library permission is needed to select documents');
+  if (Platform.OS === 'ios') {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      throw new Error('Photo library permission is needed to select documents');
+    }
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({

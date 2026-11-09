@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import type { PartnerRestaurant } from '@/core/api/generated/model';
 import { signOut } from '@/core/auth/auth-actions';

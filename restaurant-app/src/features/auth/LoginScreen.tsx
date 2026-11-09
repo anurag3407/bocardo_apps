@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizePhone, sendOtp } from '@/core/auth/auth-actions';
 import { Button, Input, Logo, radius, Row, spacing, Text, useTheme } from '@/ui';
@@ -87,7 +87,27 @@ export function LoginScreen({ headline = 'Food you love,\ndelivered fast', tag }
               style={{ fontSize: 17, fontWeight: '600', letterSpacing: 0.5 }}
             />
             <Button title="Continue" size="lg" loading={loading} disabled={phone.replace(/\D/g, '').length < 10} onPress={submit} />
-            <Text variant="caption" subtle center>{"By continuing, you agree to Bocardo's Terms of Service and Privacy Policy."}</Text>
+            <Text variant="caption" subtle center>
+              {"By continuing, you agree to Bocardo's "}
+              <Text
+                variant="caption"
+                color={t.brand}
+                style={{ textDecorationLine: 'underline' }}
+                onPress={() => void Linking.openURL('https://bocardo.app/terms')}
+              >
+                Terms of Service
+              </Text>
+              {' and '}
+              <Text
+                variant="caption"
+                color={t.brand}
+                style={{ textDecorationLine: 'underline' }}
+                onPress={() => void Linking.openURL('https://bocardo.app/privacy')}
+              >
+                Privacy Policy
+              </Text>
+              {'.'}
+            </Text>
           </SafeAreaView>
         </ScrollView>
       </KeyboardAvoidingView>

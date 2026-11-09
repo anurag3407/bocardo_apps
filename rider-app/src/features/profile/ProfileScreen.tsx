@@ -1,10 +1,13 @@
 import { router } from 'expo-router';
-import { Alert, StyleSheet, View } from 'react-native';
+import Constants from 'expo-constants';
+import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { errorMessage } from '@/core/api/api-error';
 import { useRidersMe } from '@/core/api/generated/rider/rider';
+import { usersDeleteAccount } from '@/core/api/generated/users/users';
 import { signOut } from '@/core/auth/auth-actions';
 import { stopTracking } from '@/core/location/background-tracking';
 import { formatPaise } from '@/lib/format';
-import { Badge, Card, Divider, Icon, ListItem, radius, Row, Screen, spacing, Text, useTheme, type IconName } from '@/ui';
+import { Badge, Card, Divider, Icon, ListItem, Logo, radius, Row, Screen, spacing, Text, useTheme, type IconName } from '@/ui';
 
 export function ProfileScreen() {
   const t = useTheme();
@@ -14,6 +17,32 @@ export function ProfileScreen() {
   const logout = () => {
     if (r?.isOnline) return Alert.alert('Go offline first', 'Switch off duty before signing out.');
     void stopTracking().finally(() => signOut());
+  };
+
+  const deleteAccount = () => {
+    if (r?.isOnline) {
+      return Alert.alert('Go offline first', 'Switch off duty before requesting account deletion.');
+    }
+    Alert.alert(
+      'Delete account?',
+      'Your personal profile and delivery partner account will be deleted. Past trip and payout logs are retained for statutory compliance.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await usersDeleteAccount();
+              await stopTracking();
+              await signOut();
+            } catch (e) {
+              Alert.alert('Could not delete', errorMessage(e));
+            }
+          },
+        },
+      ],
+    );
   };
 
   const initial = r?.fullName?.trim()[0]?.toUpperCase() ?? 'R';
@@ -49,9 +78,24 @@ export function ProfileScreen() {
       ) : null}
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="chatbubble-ellipses-outline" title="Rider support" subtitle="Payouts, documents, trip issues" onPress={() => router.push('/support/new')} />
-        <Divider inset={48} />
-        <ListItem icon="log-out-outline" title="Sign out" destructive chevron={false} onPress={logout} />
       </Card>
+
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => void Linking.openURL('https://bocardo.app/privacy')} />
+        <Divider inset={48} />
+        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => void Linking.openURL('https://bocardo.app/terms')} />
+      </Card>
+
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        <ListItem icon="log-out-outline" title="Sign out" chevron={false} onPress={logout} />
+        <Divider inset={48} />
+        <ListItem icon="trash-outline" title="Delete account" destructive chevron={false} onPress={deleteAccount} />
+      </Card>
+
+      <View style={{ alignItems: 'center', gap: spacing.xs, marginTop: spacing.md, marginBottom: spacing.xl, opacity: 0.8 }}>
+        <Logo size={28} />
+        <Text variant="caption" subtle>Bocardo Rider v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+      </View>
     </Screen>
   );
 }

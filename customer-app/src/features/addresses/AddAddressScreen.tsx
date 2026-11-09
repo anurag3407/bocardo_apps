@@ -60,7 +60,9 @@ export function AddAddressScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const pinRef = useRef(pin);
-  pinRef.current = pin;
+  useEffect(() => {
+    pinRef.current = pin;
+  }, [pin]);
   // newest search wins; a slow older response must not repopulate the list
   const searchSeq = useRef(0);
   // a pin set from a chosen place already has its address, so reverse geocoding it is wasted spend
@@ -98,8 +100,10 @@ export function AddAddressScreen() {
     const q = searchQuery.trim();
     const seq = ++searchSeq.current;
     if (q.length < 3) {
-      setPredictions([]);
-      return;
+      const timer = setTimeout(() => {
+        if (seq === searchSeq.current) setPredictions([]);
+      }, 0);
+      return () => clearTimeout(timer);
     }
     const timer = setTimeout(async () => {
       const hits = await autocompletePlaces(q, sessionToken.current, pinRef.current ?? undefined);

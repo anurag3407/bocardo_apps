@@ -51,7 +51,7 @@ export class UsersService {
   }
 
   /**
-   * Account deletion (DPDP): personal data is anonymised; orders and ledger rows
+   * Account deletion (DPDP/App Store/Play Store): personal data is anonymised; orders and ledger rows
    * are retained for tax/accounting. Refused while an order is in flight.
    */
   async deleteAccount(userId: string) {
@@ -65,6 +65,18 @@ export class UsersService {
       throw AppError.conflict(
         'ACTIVE_ORDER_EXISTS',
         'Please wait until your current order is completed',
+      );
+
+    const activeRiderDelivery = await this.db
+      .selectFrom('orders')
+      .select('id')
+      .where('rider_id', '=', userId)
+      .where('status', 'in', ACTIVE_ORDER_STATUSES)
+      .executeTakeFirst();
+    if (activeRiderDelivery)
+      throw AppError.conflict(
+        'ACTIVE_DELIVERY_EXISTS',
+        'Please wait until your active delivery is completed',
       );
 
     await this.db.transaction().execute(async (tx) => {
@@ -84,6 +96,23 @@ export class UsersService {
         .updateTable('addresses')
         .set({ deleted_at: new Date() })
         .where('user_id', '=', userId)
+        .execute();
+      await tx
+        .updateTable('riders')
+        .set({
+          is_online: false,
+          current_order_id: null,
+          aadhaar_number: null,
+          pan_number: null,
+          bank_account_number: null,
+          bank_ifsc: null,
+          bank_beneficiary_name: null,
+          license_number: null,
+          rc_number: null,
+          current_address: null,
+          emergency_contact_phone: null,
+        })
+        .where('id', '=', userId)
         .execute();
       await tx.deleteFrom('device_tokens').where('user_id', '=', userId).execute();
     });

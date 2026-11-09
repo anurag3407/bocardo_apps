@@ -108,38 +108,41 @@ export function ApplyScreen() {
   // Pre-fill form if existing application exists
   useEffect(() => {
     if (existingApp && !isEditing) {
-      setForm((prev) => ({
-        ...prev,
-        name: existingApp.name ?? '',
-        cuisines: existingApp.cuisines?.join(', ') ?? '',
-        phone: existingApp.phone ?? '',
-        email: existingApp.email ?? '',
-        isVegOnly: existingApp.isVegOnly ?? false,
-        costForTwo: existingApp.costForTwoPaise ? String(Math.round(existingApp.costForTwoPaise / 100)) : '400',
-        avgPrepMinutes: String(existingApp.avgPrepMinutes ?? 20),
-        addressLine: existingApp.addressLine ?? '',
-        ownerName: existingApp.ownerName ?? '',
-        ownerPhone: existingApp.ownerPhone ?? '',
-        ownerEmail: existingApp.ownerEmail ?? '',
-        legalEntityName: existingApp.legalEntityName ?? '',
-        fssaiLicense: existingApp.fssaiLicense ?? '',
-        fssaiExpiryDate: existingApp.fssaiExpiryDate ?? '',
-        fssaiDocumentPath: existingApp.fssaiDocumentPath ?? '',
-        panNumber: existingApp.panNumber ?? '',
-        panDocumentPath: existingApp.panDocumentPath ?? '',
-        gstin: existingApp.gstin ?? '',
-        gstDocumentPath: existingApp.gstDocumentPath ?? '',
-        isGstExempt: !existingApp.gstin,
-        bankBeneficiaryName: existingApp.bankBeneficiaryName ?? '',
-        bankName: existingApp.bankName ?? '',
-        bankAccountNumber: '',
-        confirmAccountNumber: '',
-        bankIfsc: existingApp.bankIfsc ?? '',
-        bankChequeDocumentPath: existingApp.bankChequeDocumentPath ?? '',
-      }));
-      if (existingApp.lat && existingApp.lng) {
-        setPin({ lat: existingApp.lat, lng: existingApp.lng });
-      }
+      const timer = setTimeout(() => {
+        setForm((prev) => ({
+          ...prev,
+          name: existingApp.name ?? '',
+          cuisines: existingApp.cuisines?.join(', ') ?? '',
+          phone: existingApp.phone ?? '',
+          email: existingApp.email ?? '',
+          isVegOnly: existingApp.isVegOnly ?? false,
+          costForTwo: existingApp.costForTwoPaise ? String(Math.round(existingApp.costForTwoPaise / 100)) : '400',
+          avgPrepMinutes: String(existingApp.avgPrepMinutes ?? 20),
+          addressLine: existingApp.addressLine ?? '',
+          ownerName: existingApp.ownerName ?? '',
+          ownerPhone: existingApp.ownerPhone ?? '',
+          ownerEmail: existingApp.ownerEmail ?? '',
+          legalEntityName: existingApp.legalEntityName ?? '',
+          fssaiLicense: existingApp.fssaiLicense ?? '',
+          fssaiExpiryDate: existingApp.fssaiExpiryDate ?? '',
+          fssaiDocumentPath: existingApp.fssaiDocumentPath ?? '',
+          panNumber: existingApp.panNumber ?? '',
+          panDocumentPath: existingApp.panDocumentPath ?? '',
+          gstin: existingApp.gstin ?? '',
+          gstDocumentPath: existingApp.gstDocumentPath ?? '',
+          isGstExempt: !existingApp.gstin,
+          bankBeneficiaryName: existingApp.bankBeneficiaryName ?? '',
+          bankName: existingApp.bankName ?? '',
+          bankAccountNumber: '',
+          confirmAccountNumber: '',
+          bankIfsc: existingApp.bankIfsc ?? '',
+          bankChequeDocumentPath: existingApp.bankChequeDocumentPath ?? '',
+        }));
+        if (existingApp.lat && existingApp.lng) {
+          setPin({ lat: existingApp.lat, lng: existingApp.lng });
+        }
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [existingApp, isEditing]);
 

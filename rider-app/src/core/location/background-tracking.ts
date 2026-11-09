@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { httpClient } from '../api/http-client';
@@ -81,11 +82,35 @@ const PROFILES: Record<TrackingMode, Pick<Location.LocationTaskOptions, 'accurac
 };
 const MODE_KEY = 'rider-tracking-mode';
 
+/**
+ * Prominent In-App Disclosure for Google Play and App Store compliance.
+ * Mandated prior to requesting background location on mobile platforms.
+ */
+async function promptBackgroundDisclosure(): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    Alert.alert(
+      'Location Access in Background',
+      'Bocardo Rider collects location data to enable real-time order dispatch, navigation, and live customer tracking even when the app is closed or not in use.\n\nPlease select "Allow all the time" in the next prompt so you do not miss nearby delivery orders.',
+      [
+        { text: 'Not Now', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Agree & Continue', onPress: () => resolve(true) },
+      ],
+      { cancelable: false },
+    );
+  });
+}
+
 export async function startTracking(mode: TrackingMode = 'idle') {
   const fg = await Location.requestForegroundPermissionsAsync();
   if (fg.status !== 'granted') throw new BackgroundPermissionError();
-  const bg = await Location.requestBackgroundPermissionsAsync();
-  if (bg.status !== 'granted') throw new BackgroundPermissionError();
+
+  const currentBg = await Location.getBackgroundPermissionsAsync();
+  if (currentBg.status !== 'granted') {
+    const agreed = await promptBackgroundDisclosure();
+    if (!agreed) throw new BackgroundPermissionError();
+    const bg = await Location.requestBackgroundPermissionsAsync();
+    if (bg.status !== 'granted') throw new BackgroundPermissionError();
+  }
 
   const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
   if (running && (await kv.getItem(MODE_KEY)) === mode) return;
