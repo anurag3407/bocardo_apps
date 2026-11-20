@@ -45,6 +45,7 @@ export default function RootLayout() {
               <Stack.Screen name="support/new" options={{ title: 'Support', presentation: 'modal' }} />
             </Stack.Protected>
             <Stack.Protected guard={signedIn && !isRider}>
+              <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             </Stack.Protected>
             <Stack.Protected guard={!signedIn}>
