@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import type { FastifyReply } from 'fastify';
 import { sql } from 'kysely';
 import { Public } from '../../common/auth/decorators';
+import { ENV, type Env } from '../../config/env';
 import { DB, type Db } from '../../infra/database/database';
 import { KV_STORE, type KvStore } from '../../infra/kv/kv-store';
 
@@ -12,6 +13,7 @@ export class HealthController {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(KV_STORE) private readonly kv: KvStore,
+    @Inject(ENV) private readonly env: Env,
   ) {}
 
   /** Liveness: the process is up. */
@@ -34,6 +36,12 @@ export class HealthController {
     return {
       database: db.status === 'fulfilled' ? 'ok' : 'down',
       cache: kv.status === 'fulfilled' ? 'ok' : 'degraded',
+      // lets ops confirm the OTP plumbing without shell access; no secrets leave the process
+      otp: {
+        sender: this.env.SMS_PROVIDER,
+        devWebhook: Boolean(this.env.DEV_OTP_WEBHOOK_URL),
+        hookSecret: Boolean(this.env.SUPABASE_SEND_SMS_HOOK_SECRET),
+      },
     };
   }
 }

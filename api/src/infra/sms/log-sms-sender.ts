@@ -17,24 +17,23 @@ export class LogSmsSender implements SmsSender {
     if (!this.devWebhookUrl) return;
 
     const text = `[Bocardo Dev OTP] +${phone}: ${otp}`;
-    try {
-      const isDiscord = this.devWebhookUrl.includes('discord.com/api/webhooks');
-      const isSlack = this.devWebhookUrl.includes('hooks.slack.com');
-      await fetch(this.devWebhookUrl, {
-        method: 'POST',
-        headers:
-          isDiscord || isSlack
-            ? { 'Content-Type': 'application/json' }
-            : { 'Content-Type': 'text/plain', Title: 'Bocardo Dev OTP' },
-        body: isDiscord
-          ? JSON.stringify({ content: text })
-          : isSlack
-            ? JSON.stringify({ text })
-            : text,
-        signal: AbortSignal.timeout(4000),
-      });
-    } catch (err) {
-      this.logger.warn(`dev OTP webhook failed: ${(err as Error).message}`);
-    }
+    const isDiscord = this.devWebhookUrl.includes('discord.com/api/webhooks');
+    const isSlack = this.devWebhookUrl.includes('hooks.slack.com');
+    const res = await fetch(this.devWebhookUrl, {
+      method: 'POST',
+      headers:
+        isDiscord || isSlack
+          ? { 'Content-Type': 'application/json' }
+          : { 'Content-Type': 'text/plain', Title: 'Bocardo Dev OTP' },
+      body: isDiscord
+        ? JSON.stringify({ content: text })
+        : isSlack
+          ? JSON.stringify({ text })
+          : text,
+      signal: AbortSignal.timeout(4000),
+    });
+    // A configured sink that drops the message means the OTP reached nobody; report it so the
+    // caller logs the attempt as failed and Supabase shows an error instead of a silent success.
+    if (!res.ok) throw new Error(`dev OTP webhook returned ${res.status}`);
   }
 }
