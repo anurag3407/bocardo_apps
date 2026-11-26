@@ -203,7 +203,7 @@ jobs:
           npx expo prebuild --platform android --non-interactive
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --max-workers=2
+          ./gradlew assembleRelease --no-daemon --max-workers=2 || ./gradlew assembleRelease --no-daemon --max-workers=2
           mkdir -p "${RUNNER_TEMP}/apks"
           cp app/build/outputs/apk/release/app-release.apk "${RUNNER_TEMP}/apks/bocardo-${{ matrix.key }}-${{ matrix.version }}.apk"
 
@@ -240,6 +240,10 @@ jobs:
           ref: ${{ needs.prepare.outputs.head_sha }}
           clean: true
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Download built APKs
         uses: actions/download-artifact@v4
         with:
@@ -255,10 +259,12 @@ jobs:
           API_DOMAIN: ${{ vars.API_DOMAIN || 'api.bocardo.in' }}
         run: |
           chmod +x deploy/scripts/publish-apk.sh
+          ITEMS="$(node -e "for (const item of JSON.parse(process.env.MATRIX_JSON).include) console.log([item.key, item.version, item.versionCode].join('\t'));")"
+          test -n "$ITEMS" || { echo "::error::No release items parsed from MATRIX_JSON"; exit 1; }
           while IFS=$'\t' read -r key version vc; do
             apk_file="${RUNNER_TEMP}/apks/bocardo-${key}-${version}.apk"
             deploy/scripts/publish-apk.sh "$key" "$version" "$vc" "$apk_file" "$FORCE_UPDATE" "$RELEASE_NOTES"
-          done < <(node -e "for (const item of JSON.parse(process.env.MATRIX_JSON).include) console.log([item.key, item.version, item.versionCode].join('\t'));")
+          done <<< "$ITEMS"
 
       - name: Summary
         if: always()

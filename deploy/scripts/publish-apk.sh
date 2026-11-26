@@ -43,12 +43,47 @@ APP_SECRET="${APP_SECRET%\'}"
 APP_SECRET="${APP_SECRET#\'}"
 [[ -n "$APP_SECRET" ]] || die "APP_SECRET missing from $SHARED_DIR/api.env"
 
-PAYLOAD="$(node -e "
-  const [app, version, vc, apkUrl, force, notes] = process.argv.slice(1);
-  const body = { app, version, versionCode: Number(vc), apkUrl, force: force === 'true' };
-  if (notes && notes.trim()) body.releaseNotes = notes.trim();
-  process.stdout.write(JSON.stringify(body));
-" "$APP" "$VERSION" "$VERSION_CODE" "$APK_URL" "$FORCE" "$RELEASE_NOTES")"
+json_payload() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c '
+import json, sys
+app, version, vc, apk_url, force, notes = sys.argv[1:7]
+body = {"app": app, "version": version, "versionCode": int(vc), "apkUrl": apk_url, "force": force == "true"}
+if notes.strip():
+    body["releaseNotes"] = notes.strip()
+sys.stdout.write(json.dumps(body))
+' "$@"
+  else
+    node -e '
+const [app, version, vc, apkUrl, force, notes] = process.argv.slice(1);
+const body = { app, version, versionCode: Number(vc), apkUrl, force: force === "true" };
+if (notes && notes.trim()) body.releaseNotes = notes.trim();
+process.stdout.write(JSON.stringify(body));
+' "$@"
+  fi
+}
+
+verify_app_config() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c '
+import json, sys
+cfg = json.loads(sys.argv[1])
+if cfg.get("latestVersion") != sys.argv[2] or cfg.get("apkUrl") != sys.argv[3]:
+    sys.stderr.write(f"app-config mismatch: {cfg}\n")
+    sys.exit(1)
+' "$@"
+  else
+    node -e '
+const cfg = JSON.parse(process.argv[1]);
+if (cfg.latestVersion !== process.argv[2] || cfg.apkUrl !== process.argv[3]) {
+  console.error("app-config mismatch:", cfg);
+  process.exit(1);
+}
+' "$@"
+  fi
+}
+
+PAYLOAD="$(json_payload "$APP" "$VERSION" "$VERSION_CODE" "$APK_URL" "$FORCE" "$RELEASE_NOTES")"
 
 # Wait up to 240s in case a concurrent API · deploy is reloading Caddy or swapping containers
 deadline=$((SECONDS + 240))
@@ -82,12 +117,6 @@ rm -f /tmp/publish-apk-resp.json
 
 # Verify live public /app-config endpoint returns the newly published version
 cfg_json="$(curl -fsS --resolve "${API_DOMAIN}:443:127.0.0.1" "https://${API_DOMAIN}/app-config/${APP}")"
-node -e "
-  const cfg = JSON.parse(process.argv[1]);
-  if (cfg.latestVersion !== process.argv[2] || cfg.apkUrl !== process.argv[3]) {
-    console.error('app-config mismatch:', cfg);
-    process.exit(1);
-  }
-" "$cfg_json" "$VERSION" "$APK_URL"
+verify_app_config "$cfg_json" "$VERSION" "$APK_URL"
 
 log "published ${APP} v${VERSION} (${VERSION_CODE}) -> ${APK_URL}"
