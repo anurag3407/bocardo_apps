@@ -5,6 +5,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { randomUUID } from 'node:crypto';
+import { setDefaultResultOrder } from 'node:dns';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AppModule } from './app.module';
@@ -13,6 +14,9 @@ import { repairNullableRoots, tidyOpenApi } from './common/http/openapi';
 import { loadEnv } from './config/env';
 
 async function bootstrap() {
+  // Docker containers usually have no IPv6 route; prefer A records so fetch() to dual-stack
+  // hosts (ntfy.sh, some providers) does not fail with an unreachable AAAA.
+  setDefaultResultOrder('ipv4first');
   try {
     process.loadEnvFile();
   } catch {
