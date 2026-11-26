@@ -44,6 +44,8 @@ export class HumanVerifier {
       return { ok: true, via: 'app_check' };
     } catch (err) {
       this.logger.warn(`app check rejected: ${(err as Error).message}`);
+      // optional is for dev/staging, where a debug token may not be registered in the console
+      if (this.env.OTP_HUMAN_CHECK === 'optional') return { ok: true, via: 'skipped' };
       return { ok: false, reason: 'invalid app check token' };
     }
   }
@@ -65,8 +67,11 @@ export class HumanVerifier {
       signal: AbortSignal.timeout(5000),
     }).catch(() => null);
     const data = (await res?.json().catch(() => null)) as { success?: boolean } | null;
-    return data?.success
-      ? { ok: true, via: 'turnstile' }
-      : { ok: false, reason: 'turnstile failed' };
+    if (data?.success) return { ok: true, via: 'turnstile' };
+    if (this.env.OTP_HUMAN_CHECK === 'optional') {
+      this.logger.warn('turnstile failed — continuing because OTP_HUMAN_CHECK=optional');
+      return { ok: true, via: 'skipped' };
+    }
+    return { ok: false, reason: 'turnstile failed' };
   }
 }

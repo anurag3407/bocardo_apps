@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { sendOtp, verifyOtp } from '@/core/auth/auth-actions';
 import { Button, Icon, IconButton, radius, Screen, spacing, Text, useTheme } from '@/ui';
 
-const RESEND_AFTER_S = 30;
+// Supabase allows one OTP per phone every 60 s; a shorter window just surfaces a 429.
+const RESEND_AFTER_S = 60;
 const LENGTH = 6;
 
 export function VerifyScreen() {

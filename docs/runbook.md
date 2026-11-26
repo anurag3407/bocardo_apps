@@ -23,6 +23,29 @@ Indian operators silently drop SMS that are not DLT-registered. One-time, takes 
 4. Link the header and template to your SMS provider (MSG91) as the telemarketer; create the MSG91 OTP template with the same text. → `MSG91_OTP_TEMPLATE_ID`
 5. Supabase → Auth → Hooks → **Send SMS** → HTTPS `{API}/webhooks/auth/send-sms`, copy the secret → `SUPABASE_SEND_SMS_HOOK_SECRET`. Set `SMS_PROVIDER=msg91`.
 
+## SMS OTP: the two halves that must both be live
+
+The app calls `POST /auth/otp-ticket`, then Supabase Auth generates the OTP and calls
+`POST /webhooks/auth/send-sms`; the API forwards it only for a ticketed number.
+
+1. **Hook (Supabase)** → Authentication → Hooks → **Send SMS** → HTTPS, URI
+   `https://api.bocardo.in/webhooks/auth/send-sms`, generate the secret (`v1,whsec_…`) and put the
+   **same** value in the API env as `SUPABASE_SEND_SMS_HOOK_SECRET` — the dedicated GitHub secret of
+   that name, which `deploy/scripts/write-config.sh` upserts into `api.env` on deploy — then
+   redeploy. This is the switch that bypasses Supabase's own SMS provider: with the hook on, Twilio
+   Verify is never called, and with the hook off, the ticket gate is never used.
+2. **Sender (API)**:
+   * *Testing, no SMS spend* — `SMS_PROVIDER=log` + `DEV_OTP_WEBHOOK_URL=https://ntfy.sh/<private-topic>`:
+     the code is written to the API log and pushed to ntfy/Discord/Slack.
+   * *Real users* — `SMS_PROVIDER=msg91` with the DLT + MSG91 template ids above.
+   * *Twilio Verify* — only works for numbers added as verified testers on a trial account
+     (error 21608 otherwise); India also needs DLT. Upgrade before relying on it.
+
+Verify with `select outcome, provider, count(*) from public.otp_send_log group by 1, 2;` — a missing
+row means the hook never reached the API (wrong/empty secret); `blocked_no_ticket` means the client
+skipped the ticket call. Local demo phones still use `[auth.sms.test_otp]` in
+`api/supabase/config.toml` (code `123456`).
+
 ## Firebase App Check
 1. Firebase console → App Check → register the three Android apps with **Play Integrity** (add the Play signing SHA-256) and the iOS apps with **App Attest** (DeviceCheck fallback).
 2. Dev builds use the debug provider: put the debug token from the device log in the console and in `EXPO_PUBLIC_APP_CHECK_DEBUG_TOKEN`.

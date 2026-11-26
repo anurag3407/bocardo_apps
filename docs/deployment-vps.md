@@ -137,6 +137,8 @@ Check: **Settings → Actions → Runners** should show the runner as **Idle** (
 |---|---|
 | `API_ENV_FILE` | The **entire** production `.env` for the API, pasted as one multi-line secret (template below). |
 | `SUPABASE_DB_URL` | Only if `RUN_DB_MIGRATIONS=true`: the Supabase **session pooler or direct** URL (port 5432, not 6543), including the DB password. |
+| `SUPABASE_SEND_SMS_HOOK_SECRET` | Optional: the `v1,whsec_…` value from Supabase → Authentication → Hooks → Send SMS. `write-config.sh` upserts it into `api.env` on every deploy. |
+| `DEV_OTP_WEBHOOK_URL` | Optional: ntfy/Discord/Slack webhook that receives OTPs while `SMS_PROVIDER=log`. Upserted the same way. |
 
 `API_ENV_FILE` template. Start from the values currently on Render, then change the URLs:
 

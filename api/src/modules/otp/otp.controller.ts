@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, Logger, Post, Req, Res } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiHeader, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply } from 'fastify';
 import { createZodDto, ZodResponse } from 'nestjs-zod';
@@ -24,6 +24,8 @@ class OtpTicketResultDto extends createZodDto(
 @ApiTags('auth')
 @Controller()
 export class OtpController {
+  private readonly logger = new Logger(OtpController.name);
+
   constructor(private readonly otp: OtpService) {}
 
   /** Step 1 of login: prove a genuine app/browser, then request the OTP from Supabase Auth. */
@@ -58,8 +60,15 @@ export class OtpController {
     const raw = request.rawBody?.toString('utf8') ?? '';
     const secret = this.otp.hookSecret;
     const header = (name: string) => String(request.headers[name] ?? '') || undefined;
+    if (!secret) {
+      // The hook is half-configured: Supabase signs every call, so none can ever be accepted.
+      this.logger.error(
+        'Send-SMS hook called but SUPABASE_SEND_SMS_HOOK_SECRET is not set — copy it from Supabase → Authentication → Hooks → Send SMS',
+      );
+      void reply.status(401);
+      return { error: { http_code: 401, message: 'invalid hook signature' } };
+    }
     if (
-      !secret ||
       !verifyStandardWebhook(
         secret,
         {
@@ -70,6 +79,9 @@ export class OtpController {
         raw,
       )
     ) {
+      this.logger.warn(
+        `Send-SMS hook signature rejected (id=${header('webhook-id') ?? 'none'}); the hook secret differs from SUPABASE_SEND_SMS_HOOK_SECRET`,
+      );
       void reply.status(401);
       return { error: { http_code: 401, message: 'invalid hook signature' } };
     }

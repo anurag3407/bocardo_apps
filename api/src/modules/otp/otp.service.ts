@@ -40,7 +40,20 @@ export class OtpService {
     private readonly human: HumanVerifier,
     private readonly config: AppConfigService,
     private readonly realtime: RealtimePublisher,
-  ) {}
+  ) {
+    // Without the hook secret Supabase cannot deliver an OTP through this API, so the ticket
+    // gate is bypassed entirely (Supabase falls back to its own SMS provider).
+    if (!this.env.SUPABASE_SEND_SMS_HOOK_SECRET) {
+      this.logger.warn(
+        'SUPABASE_SEND_SMS_HOOK_SECRET is empty — the Supabase Send-SMS hook will reject every call; OTPs will be sent by Supabase’s own provider instead (see docs/runbook.md → SMS OTP)',
+      );
+    }
+    if (this.env.SMS_PROVIDER === 'log') {
+      this.logger.warn(
+        'SMS_PROVIDER=log — OTPs are written to this log only; set DEV_OTP_WEBHOOK_URL to forward them to ntfy/Discord/Slack',
+      );
+    }
+  }
 
   async issueTicket(input: {
     phone: string;

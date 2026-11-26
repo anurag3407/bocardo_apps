@@ -2,6 +2,7 @@
 # Writes the host config from GitHub secrets/variables, so nobody has to SSH in to edit files.
 #
 #   API_ENV_FILE    (secret)   full contents of the API's .env; skipped when empty, keeping the file on disk
+#   SUPABASE_SEND_SMS_HOOK_SECRET, DEV_OTP_WEBHOOK_URL (secrets, optional) upserted into api.env
 #   API_DOMAIN      (variable) e.g. api.bocardo.in — must resolve to this VPS
 #   ACME_EMAIL      (variable) Let's Encrypt account email
 #   API_REPLICAS, API_MEMORY_LIMIT, API_CPUS, API_HEAP_MB, DRAIN_SECONDS   (variables, optional)
@@ -24,6 +25,18 @@ elif [[ -s "$SHARED_DIR/api.env" ]]; then
 else
   die "no API env: add the API_ENV_FILE secret (contents of a production api/.env)"
 fi
+
+# Operator-managed values travel as their own small secrets, so nobody has to re-paste the whole
+# env file just to rotate the SMS hook secret. Empty secrets leave the existing value untouched.
+apply_secret() {
+  local key="$1" value="$2" tmp="$SHARED_DIR/api.env.merge"
+  [[ -z "$value" ]] && return 0
+  grep -v "^${key}=" "$SHARED_DIR/api.env" >"$tmp" || true
+  printf '%s=%s\n' "$key" "$value" >>"$tmp"
+  mv -f "$tmp" "$SHARED_DIR/api.env"
+}
+apply_secret SUPABASE_SEND_SMS_HOOK_SECRET "${SUPABASE_SEND_SMS_HOOK_SECRET:-}"
+apply_secret DEV_OTP_WEBHOOK_URL "${DEV_OTP_WEBHOOK_URL:-}"
 
 public_url="$(sed -n 's/^API_PUBLIC_URL=//p' "$SHARED_DIR/api.env" | tail -1 | tr -d "\"'")"
 if [[ "$public_url" != "https://$API_DOMAIN" ]]; then
