@@ -36,7 +36,11 @@ The app calls `POST /auth/otp-ticket`, then Supabase Auth generates the OTP and 
    Verify is never called, and with the hook off, the ticket gate is never used.
 2. **Sender (API)**:
    * *Testing, no SMS spend* — `SMS_PROVIDER=log` + `DEV_OTP_WEBHOOK_URL=https://ntfy.sh/<private-topic>`:
-     the code is written to the API log and pushed to ntfy/Discord/Slack.
+     the code is written to the API log and pushed to ntfy/Discord/Slack. Confirm the host can reach
+     the sink first: a container without egress to it records `failed … ETIMEDOUT` in
+     `otp_send_log` and Supabase returns a 500. In that case use Supabase **test OTP numbers**
+     instead (`Authentication → Providers → Phone → Test OTP`, e.g. `919999900001=123456`); they
+     bypass delivery entirely and are the fastest way to test the apps.
    * *Real users* — `SMS_PROVIDER=msg91` with the DLT + MSG91 template ids above.
    * *Twilio Verify* — only works for numbers added as verified testers on a trial account
      (error 21608 otherwise); India also needs DLT. Upgrade before relying on it.
