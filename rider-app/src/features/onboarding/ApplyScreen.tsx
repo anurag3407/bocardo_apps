@@ -10,7 +10,6 @@ import { ridersApply, ridersResubmit } from '@/core/api/generated/rider/rider';
 import { refreshClaims, signOut } from '@/core/auth/auth-actions';
 import { useSession } from '@/core/auth/session-store';
 import {
-  Badge,
   Button,
   Card,
   Divider,
@@ -91,8 +90,8 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
     initialProfile?.licenseBackPath ?? null,
   );
 
-  // KYC Docs
-  const [aadhaarNumber, setAadhaarNumber] = useState(initialProfile?.aadhaarNumber ?? '');
+  // KYC Docs (masked values returned by GET /rider/me are left blank so edits do not overwrite with bullets)
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [aadhaarFrontPath, setAadhaarFrontPath] = useState<string | null>(
     initialProfile?.aadhaarFrontPath ?? null,
   );
@@ -109,12 +108,8 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
     initialProfile?.bankBeneficiaryName ?? '',
   );
   const [bankName, setBankName] = useState(initialProfile?.bankName ?? '');
-  const [bankAccountNumber, setBankAccountNumber] = useState(
-    initialProfile?.bankAccountNumber ?? '',
-  );
-  const [confirmAccountNumber, setConfirmAccountNumber] = useState(
-    initialProfile?.bankAccountNumber ?? '',
-  );
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState('');
   const [bankIfsc, setBankIfsc] = useState(initialProfile?.bankIfsc ?? '');
   const [bankChequeDocumentPath, setBankChequeDocumentPath] = useState<string | null>(
     initialProfile?.bankChequeDocumentPath ?? null,
@@ -190,9 +185,11 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
 
   const validateStep3 = () => {
     const cleanAadhaar = aadhaarNumber.replace(/\s+/g, '');
-    if (!/^\d{12}$/.test(cleanAadhaar)) {
-      Alert.alert('Invalid Aadhaar', 'Please enter a valid 12-digit Aadhaar number.');
-      return false;
+    if (cleanAadhaar || !initialProfile?.aadhaarNumber) {
+      if (!/^\d{12}$/.test(cleanAadhaar)) {
+        Alert.alert('Invalid Aadhaar', 'Please enter a valid 12-digit Aadhaar number.');
+        return false;
+      }
     }
     if (!aadhaarFrontPath) {
       Alert.alert('Aadhaar Photo Needed', 'Please upload the front photo of your Aadhaar card.');
@@ -220,13 +217,15 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
       return false;
     }
     const cleanAcct = bankAccountNumber.trim();
-    if (!/^\d{9,18}$/.test(cleanAcct)) {
-      Alert.alert('Invalid Bank Account', 'Bank account number must be between 9 and 18 digits.');
-      return false;
-    }
-    if (cleanAcct !== confirmAccountNumber.trim()) {
-      Alert.alert('Account Number Mismatch', 'The re-entered bank account number does not match.');
-      return false;
+    if (cleanAcct || !initialProfile?.bankAccountNumber) {
+      if (!/^\d{9,18}$/.test(cleanAcct)) {
+        Alert.alert('Invalid Bank Account', 'Bank account number must be between 9 and 18 digits.');
+        return false;
+      }
+      if (cleanAcct !== confirmAccountNumber.trim()) {
+        Alert.alert('Account Number Mismatch', 'The re-entered bank account number does not match.');
+        return false;
+      }
     }
     const cleanIfsc = bankIfsc.trim().toUpperCase();
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(cleanIfsc)) {
@@ -269,12 +268,12 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
         licenseFrontPath: vehicleType !== 'bicycle' ? (licenseFrontPath ?? undefined) : undefined,
         licenseBackPath: vehicleType !== 'bicycle' ? (licenseBackPath ?? undefined) : undefined,
         rcDocumentPath: vehicleType !== 'bicycle' ? (rcDocumentPath ?? undefined) : undefined,
-        aadhaarNumber: aadhaarNumber.replace(/\s+/g, ''),
+        aadhaarNumber: aadhaarNumber.replace(/\s+/g, '') || undefined,
         aadhaarFrontPath: aadhaarFrontPath ?? undefined,
         aadhaarBackPath: aadhaarBackPath ?? undefined,
         panNumber: panNumber.trim().toUpperCase(),
         panCardPath: panCardPath ?? undefined,
-        bankAccountNumber: bankAccountNumber.trim(),
+        bankAccountNumber: bankAccountNumber.trim() || undefined,
         bankIfsc: bankIfsc.trim().toUpperCase(),
         bankBeneficiaryName: bankBeneficiaryName.trim(),
         bankName: bankName.trim(),
@@ -286,7 +285,15 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
         Alert.alert('Application Updated', 'Your updated application has been submitted for verification.');
         onComplete?.();
       } else {
-        await ridersApply(payload);
+        if (!payload.aadhaarNumber || !payload.bankAccountNumber) {
+          Alert.alert('Missing Details', 'Aadhaar number and bank account number are required.');
+          return;
+        }
+        await ridersApply({
+          ...payload,
+          aadhaarNumber: payload.aadhaarNumber,
+          bankAccountNumber: payload.bankAccountNumber,
+        });
         await refreshClaims();
         Alert.alert('Application Submitted', 'Your rider onboarding application has been submitted successfully!');
         onComplete?.();
@@ -620,7 +627,7 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
 
           <Input
             label="Aadhaar Number (12 Digits)"
-            placeholder="1234 5678 9012"
+            placeholder={initialProfile?.aadhaarNumber ? `Leave blank to keep ${initialProfile.aadhaarNumber}` : '1234 5678 9012'}
             icon="finger-print-outline"
             keyboardType="number-pad"
             maxLength={12}
@@ -697,7 +704,7 @@ export function ApplyScreen({ initialProfile, onComplete, onCancel }: ApplyScree
 
           <Input
             label="Bank Account Number"
-            placeholder="9 to 18 digits"
+            placeholder={initialProfile?.bankAccountNumber ? `Leave blank to keep ${initialProfile.bankAccountNumber}` : '9 to 18 digits'}
             icon="card-outline"
             keyboardType="number-pad"
             secureTextEntry

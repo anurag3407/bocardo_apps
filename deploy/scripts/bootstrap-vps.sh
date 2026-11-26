@@ -64,7 +64,7 @@ done
 log "directories under $BOCARDO_HOME"
 install -d -m 750 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$BOCARDO_HOME"
 install -d -m 700 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$BOCARDO_HOME/shared"
-install -d -m 750 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$BOCARDO_HOME/state" "$BOCARDO_HOME/caddy" "$BOCARDO_HOME/caddy/upstreams"
+install -d -m 750 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$BOCARDO_HOME/state" "$BOCARDO_HOME/caddy" "$BOCARDO_HOME/caddy/upstreams" "$BOCARDO_HOME/releases"
 docker network inspect bocardo_edge >/dev/null 2>&1 || docker network create bocardo_edge >/dev/null
 
 log "swap and kernel limits"

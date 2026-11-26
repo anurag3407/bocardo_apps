@@ -14,6 +14,7 @@ export BOCARDO_HOME
 SHARED_DIR="$BOCARDO_HOME/shared"
 STATE_DIR="$BOCARDO_HOME/state"
 CADDY_DIR="$BOCARDO_HOME/caddy"
+RELEASES_DIR="$BOCARDO_HOME/releases"
 UPSTREAM_FILE="$CADDY_DIR/upstreams/api.caddy"
 
 IMAGE="bocardo-api"
@@ -56,7 +57,7 @@ load_config() {
   export API_CPUS="${API_CPUS:-1.0}"
   export API_HEAP_MB="${API_HEAP_MB:-384}"
   [[ "$API_REPLICAS" =~ ^[1-9][0-9]*$ ]] || die "API_REPLICAS must be a positive integer"
-  mkdir -p "$STATE_DIR" "$CADDY_DIR/upstreams"
+  mkdir -p "$STATE_DIR" "$CADDY_DIR/upstreams" "$RELEASES_DIR"
 }
 
 # One deploy/rollback at a time, even if two workflows race.

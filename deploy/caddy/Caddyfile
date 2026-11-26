@@ -25,6 +25,15 @@ __API_DOMAIN__ {
 		format json
 	}
 
+	# Host signed release APKs directly from the VPS for in-app updates (/releases/*.apk)
+	handle /releases/* {
+		root * /srv
+		header Cache-Control "public, max-age=300"
+		file_server
+	}
+
 	# reverse_proxy to the live colour; deploy.sh rewrites this file on every release
-	import /etc/caddy/upstreams/api.caddy
+	handle {
+		import /etc/caddy/upstreams/api.caddy
+	}
 }

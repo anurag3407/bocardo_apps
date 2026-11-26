@@ -12,7 +12,7 @@ import type { AdminAccountsRestaurantsStatus, AdminRestaurant } from '@/core/api
 import { can } from '@/core/auth/claims';
 import { useAdmin } from '@/core/auth/use-admin';
 import { ask, useAction } from '@/features/common/use-action';
-import { formatDateTime, statusTone } from '@/lib/format';
+import { statusTone } from '@/lib/format';
 import { RestaurantReviewModal } from './restaurant-review-modal';
 
 const TABS: { key: AdminAccountsRestaurantsStatus | 'all'; label: string }[] = [

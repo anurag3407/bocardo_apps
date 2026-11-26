@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
+import { withAppBuildGradle } from 'expo/config-plugins';
 
 /**
  * Native config. Firebase files are per-environment and git-ignored:
@@ -10,8 +11,9 @@ const iosFirebase = process.env.GOOGLE_SERVICE_INFO_PLIST ?? './firebase/GoogleS
 
 assertReleaseEnv();
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...config,
+export default ({ config }: ConfigContext): ExpoConfig =>
+  wrapReleaseSigning({
+    ...config,
   name: 'Bocardo Partner',
   slug: 'bocardo-restaurant',
   version: '0.0.1',
@@ -158,6 +160,31 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: { typedRoutes: false, reactCompiler: true },
   extra: { eas: { projectId: 'de7b44f1-cca2-4e9e-802c-e43ed0cc3e7d' } },
 });
+
+function wrapReleaseSigning(cfg: ExpoConfig): ExpoConfig {
+  return withAppBuildGradle(cfg, (mod) => {
+    const contents = mod.modResults.contents;
+    if (contents.includes('ANDROID_KEYSTORE_PATH')) return mod;
+    const releaseBlock = `
+        release {
+            if (System.getenv('ANDROID_KEYSTORE_PATH')) {
+                storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: System.getenv('ANDROID_KEYSTORE_PASSWORD')
+            } else {
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }`;
+    mod.modResults.contents = contents
+      .replace(/(signingConfigs\s*\{\s*debug\s*\{[\s\S]*?\n\s*\})/, `$1${releaseBlock}`)
+      .replace(/(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?)signingConfig signingConfigs\.debug/, '$1signingConfig signingConfigs.release');
+    return mod;
+  });
+}
 
 /**
  * EXPO_PUBLIC_* values are inlined into the JS bundle at build time and .env is git-ignored

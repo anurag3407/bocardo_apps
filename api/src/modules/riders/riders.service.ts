@@ -64,13 +64,15 @@ export class RidersService {
       }
     }
 
-    // Verify KYC document uploads exist in storage if provided
-    if (input.aadhaarFrontPath && !(await this.storage.exists('kyc-documents', input.aadhaarFrontPath))) {
-      throw AppError.badRequest('AADHAAR_DOC_NOT_FOUND', 'Aadhaar document was not found in storage');
-    }
-    if (input.licenseFrontPath && !(await this.storage.exists('kyc-documents', input.licenseFrontPath))) {
-      throw AppError.badRequest('LICENSE_DOC_NOT_FOUND', 'Driving licence document was not found in storage');
-    }
+    await this.verifyKycDocuments(userId, [
+      input.aadhaarFrontPath,
+      input.aadhaarBackPath,
+      input.panCardPath,
+      input.licenseFrontPath,
+      input.licenseBackPath,
+      input.rcDocumentPath,
+      input.bankChequeDocumentPath,
+    ]);
 
     if (existing) {
       // Re-submitting existing application
@@ -136,6 +138,16 @@ export class RidersService {
     if (existing.kyc_status === 'approved') {
       throw AppError.conflict('ALREADY_APPROVED', 'Your rider account is already approved');
     }
+
+    await this.verifyKycDocuments(userId, [
+      input.aadhaarFrontPath,
+      input.aadhaarBackPath,
+      input.panCardPath,
+      input.licenseFrontPath,
+      input.licenseBackPath,
+      input.rcDocumentPath,
+      input.bankChequeDocumentPath,
+    ]);
 
     await this.db.transaction().execute(async (tx) => {
       if (input.fullName) {
@@ -587,6 +599,22 @@ export class RidersService {
         event: 'rider_sos',
         payload: { riderId, ...input, at: new Date().toISOString() },
       });
+    }
+  }
+
+  private async verifyKycDocuments(userId: string, paths: Array<string | undefined>) {
+    const unique = [...new Set(paths.filter((p): p is string => Boolean(p)))];
+    const prefix = `${userId}/`;
+    for (const path of unique) {
+      if (!path.startsWith(prefix) || path.includes('..')) {
+        throw AppError.badRequest(
+          'INVALID_KYC_DOCUMENT',
+          'KYC document must be uploaded under your own account',
+        );
+      }
+      if (!(await this.storage.exists('kyc-documents', path))) {
+        throw AppError.badRequest('KYC_DOC_NOT_FOUND', 'Uploaded KYC document was not found in storage');
+      }
     }
   }
 

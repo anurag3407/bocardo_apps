@@ -247,6 +247,35 @@
         ]
       }
     },
+    "/public/deletion-request": {
+      "post": {
+        "operationId": "Users_deletionRequest",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/addresses": {
       "get": {
         "operationId": "Addresses_list",
@@ -4885,6 +4914,18 @@
           "minVersion": {
             "type": "string"
           },
+          "latestVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "apkUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseNotes": {
+            "type": "string",
+            "nullable": true
+          },
           "supportPhone": {
             "type": "string",
             "nullable": true
@@ -4904,6 +4945,32 @@
           "supportEmail"
         ],
         "additionalProperties": false
+      },
+      "DeletionRequestDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 20
+          },
+          "app": {
+            "type": "string",
+            "enum": [
+              "customer",
+              "restaurant",
+              "rider"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "phone",
+          "app"
+        ]
       },
       "Address": {
         "type": "object",

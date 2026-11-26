@@ -86,6 +86,7 @@ render_caddyfile() {
 # Network, Caddy config and the Caddy container. Idempotent; changes reload without downtime.
 ensure_edge() {
   docker network inspect "$EDGE_NETWORK" >/dev/null 2>&1 || docker network create "$EDGE_NETWORK" >/dev/null
+  mkdir -p "$RELEASES_DIR"
   if [[ ! -f "$UPSTREAM_FILE" ]]; then
     printf 'respond "Bocardo API is starting" 503\n' >"$UPSTREAM_FILE"
   fi

@@ -10,7 +10,7 @@ import { DeliveryMap } from '@/core/maps/delivery-map';
 import { useRealtime } from '@/core/realtime/use-realtime';
 import { TripPanel } from '@/features/trip/TripPanel';
 import { formatPaise } from '@/lib/format';
-import { Card, elevation, EmptyState, ErrorState, Icon, Loading, Logo, radius, Row, Screen, spacing, Text, Toggle, useTheme } from '@/ui';
+import { Card, elevation, ErrorState, Icon, Loading, Logo, radius, Row, Screen, spacing, Text, Toggle, useTheme } from '@/ui';
 import { ApplyScreen } from '../onboarding/ApplyScreen';
 import { RiderKycStatusView } from '../onboarding/RiderKycStatusView';
 import { OfferModal } from './OfferModal';

@@ -34,8 +34,31 @@ export class RegisterDeviceDto extends createZodDto(
 export class AppConfigDto extends createZodDto(
   z.object({
     minVersion: z.string(),
+    latestVersion: z.string().nullable().optional(),
+    apkUrl: z.string().nullable().optional(),
+    releaseNotes: z.string().nullable().optional(),
     supportPhone: z.string().nullable(),
     supportEmail: z.string().nullable(),
     campaignIcon: z.string().nullable().optional(),
+  }),
+) {}
+
+export class PublishReleaseDto extends createZodDto(
+  z.object({
+    app: z.enum(['customer', 'restaurant', 'rider']),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/, 'Version must be semver x.y.z'),
+    versionCode: z.number().int().positive(),
+    apkUrl: z.url(),
+    minVersion: z.string().regex(/^\d+\.\d+\.\d+$/).optional(),
+    force: z.boolean().default(false),
+    releaseNotes: z.string().trim().max(500).optional(),
+  }),
+) {}
+
+export class DeletionRequestDto extends createZodDto(
+  z.object({
+    phone: z.string().trim().min(10).max(20),
+    app: z.enum(['customer', 'restaurant', 'rider']),
+    reason: z.string().trim().max(500).optional(),
   }),
 ) {}

@@ -27,6 +27,7 @@ import { HumanVerifier } from './security/human-verifier';
 import { LogSmsSender } from './sms/log-sms-sender';
 import { Msg91SmsSender } from './sms/msg91-sms-sender';
 import { SMS_SENDER } from './sms/sms-sender';
+import { TwilioSmsSender } from './sms/twilio-sms-sender';
 import { StorageService } from './storage/storage.service';
 import { DirectTelephonyProvider } from './telephony/direct-telephony-provider';
 import { ExotelTelephonyProvider } from './telephony/exotel-telephony-provider';
@@ -115,7 +116,24 @@ const logger = new Logger('InfraModule');
             dltTemplateId: env.DLT_OTP_TEMPLATE_ID,
           });
         }
-        return new LogSmsSender();
+        if (env.SMS_PROVIDER === 'twilio') {
+          if (
+            !env.TWILIO_ACCOUNT_SID ||
+            !env.TWILIO_AUTH_TOKEN ||
+            (!env.TWILIO_MESSAGE_SERVICE_SID && !env.TWILIO_FROM_NUMBER)
+          )
+            throw new Error(
+              'TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_MESSAGE_SERVICE_SID or TWILIO_FROM_NUMBER are required',
+            );
+          return new TwilioSmsSender({
+            accountSid: env.TWILIO_ACCOUNT_SID,
+            authToken: env.TWILIO_AUTH_TOKEN,
+            messagingServiceSid: env.TWILIO_MESSAGE_SERVICE_SID,
+            fromNumber: env.TWILIO_FROM_NUMBER,
+          });
+        }
+        const allowWebhook = env.NODE_ENV !== 'production' || env.ALLOW_DEV_FALLBACKS;
+        return new LogSmsSender(allowWebhook ? env.DEV_OTP_WEBHOOK_URL : undefined);
       },
     },
     {

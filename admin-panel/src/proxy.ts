@@ -2,11 +2,20 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isAdmin, type AdminClaims } from './core/auth/claims';
 
+const PUBLIC_PATHS = ['/login', '/privacy', '/terms', '/delete-account', '/privacy.html', '/terms.html', '/delete-account.html'];
+
 /**
  * Optimistic gate: refreshes the Supabase session cookie and keeps non-admins out of the
  * console. The API still authorizes every call — this only avoids rendering a dead UI.
  */
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`))) {
+    if (path !== '/login' && !path.startsWith('/login/')) {
+      return NextResponse.next({ request });
+    }
+  }
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
@@ -21,7 +30,7 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims as AdminClaims | undefined;
-  const onLogin = request.nextUrl.pathname.startsWith('/login');
+  const onLogin = path.startsWith('/login');
 
   if (!isAdmin(claims) && !onLogin) {
     const url = request.nextUrl.clone();

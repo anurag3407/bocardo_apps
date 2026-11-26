@@ -9,4 +9,5 @@ export const env = {
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
     'sb_publishable_Ulr3_St0cYbBrMFWWmh-SA_-izndqFb',
   mapboxToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '',
+  webUrl: process.env.EXPO_PUBLIC_WEB_URL || 'https://bocardo.in',
 };

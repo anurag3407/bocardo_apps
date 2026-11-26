@@ -7,6 +7,7 @@ import { errorMessage } from '@/core/api/api-error';
 import { getUsersMeQueryKey, useUsersMe, usersDeleteAccount, usersUpdate } from '@/core/api/generated/users/users';
 import { useAppConfig } from '@/core/app-config/use-app-config';
 import { signOut } from '@/core/auth/auth-actions';
+import { env } from '@/core/config/env';
 import { Button, Card, Divider, IconButton, Input, ListItem, Logo, radius, Row, Screen, spacing, Text, useTheme } from '@/ui';
 
 export function AccountScreen() {
@@ -85,12 +86,23 @@ export function AccountScreen() {
       </Card>
 
       <Card padded={false} style={styles.group}>
-        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => Linking.openURL('https://bocardo.app/privacy')} />
+        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => Linking.openURL(`${env.webUrl}/privacy`)} />
         <Divider inset={48} />
-        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => Linking.openURL('https://bocardo.app/terms')} />
+        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => Linking.openURL(`${env.webUrl}/terms`)} />
       </Card>
 
       <Card padded={false} style={styles.group}>
+        {config.updateAvailable && config.apkUrl ? (
+          <>
+            <ListItem
+              icon="cloud-download-outline"
+              title={`Update to v${config.latestVersion}`}
+              subtitle={config.releaseNotes ?? 'Tap to download the latest APK'}
+              onPress={() => void Linking.openURL(config.apkUrl!)}
+            />
+            <Divider inset={48} />
+          </>
+        ) : null}
         <ListItem icon="log-out-outline" title="Sign out" chevron={false} onPress={() => { qc.clear(); void signOut(); }} />
         <Divider inset={48} />
         <ListItem icon="trash-outline" title="Delete account" destructive chevron={false} onPress={deleteAccount} />

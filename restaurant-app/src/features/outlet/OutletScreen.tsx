@@ -5,7 +5,9 @@ import { router } from 'expo-router';
 import { errorMessage } from '@/core/api/api-error';
 import { partnerSetBusy, partnerSetHours, partnerUpdate } from '@/core/api/generated/partner/partner';
 import { usersDeleteAccount } from '@/core/api/generated/users/users';
+import { useAppConfig } from '@/core/app-config/use-app-config';
 import { signOut } from '@/core/auth/auth-actions';
+import { env } from '@/core/config/env';
 import { Badge, Button, Card, Chip, Divider, IconBadge, Input, ListItem, Logo, RatingBadge, Row, Screen, spacing, Text, useTheme } from '@/ui';
 import { useCurrentRestaurant } from './selected-restaurant';
 
@@ -13,6 +15,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function OutletScreen() {
   const t = useTheme();
+  const config = useAppConfig();
   const { current, restaurants, select, refetch } = useCurrentRestaurant();
   const [prep, setPrep] = useState<string | null>(null);
   const [hours, setHours] = useState<Record<number, { opensAt: string; closesAt: string }> | null>(null);
@@ -151,12 +154,23 @@ export function OutletScreen() {
       </Card>
 
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
-        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => void Linking.openURL('https://bocardo.app/privacy')} />
+        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => void Linking.openURL(`${env.webUrl}/privacy`)} />
         <Divider inset={48} />
-        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => void Linking.openURL('https://bocardo.app/terms')} />
+        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => void Linking.openURL(`${env.webUrl}/terms`)} />
       </Card>
 
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        {config.updateAvailable && config.apkUrl ? (
+          <>
+            <ListItem
+              icon="cloud-download-outline"
+              title={`Update to v${config.latestVersion}`}
+              subtitle={config.releaseNotes ?? 'Tap to download the latest APK'}
+              onPress={() => void Linking.openURL(config.apkUrl!)}
+            />
+            <Divider inset={48} />
+          </>
+        ) : null}
         <ListItem icon="log-out-outline" title="Sign out" chevron={false} onPress={() => void signOut()} />
         <Divider inset={48} />
         <ListItem icon="trash-outline" title="Delete account" destructive chevron={false} onPress={deleteAccount} />

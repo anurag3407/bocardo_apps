@@ -1,7 +1,7 @@
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import type { RiderProfile } from '@/core/api/generated/model';
 import { signOut } from '@/core/auth/auth-actions';
-import { Badge, Button, Card, Divider, Icon, Logo, radius, Row, Screen, spacing, Text, useTheme } from '@/ui';
+import { Badge, Button, Card, Divider, Icon, Logo, Row, Screen, spacing, Text, useTheme } from '@/ui';
 
 interface RiderKycStatusViewProps {
   rider: RiderProfile;
@@ -13,7 +13,6 @@ export function RiderKycStatusView({ rider, onRefresh, onEdit }: RiderKycStatusV
   const t = useTheme();
   const isPending = rider.kycStatus === 'pending';
   const isRejected = rider.kycStatus === 'rejected';
-  const isSuspended = rider.kycStatus === 'suspended';
 
   const maskedAadhaar = rider.aadhaarNumber
     ? `•••• •••• ${rider.aadhaarNumber.slice(-4)}`

@@ -1,17 +1,45 @@
 'use client';
 
 import { useState } from 'react';
+import { env } from '@/core/config/env';
 
 export default function DeleteAccountPage() {
   const [phone, setPhone] = useState('');
-  const [appType, setAppType] = useState('customer');
+  const [appType, setAppType] = useState<'customer' | 'restaurant' | 'rider'>('customer');
   const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.trim()) return;
-    setSubmitted(true);
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10) {
+      setError('Please enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`${env.apiUrl}/public/deletion-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          phone: phone.trim(),
+          app: appType,
+          ...(reason.trim() ? { reason: reason.trim() } : {}),
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+        throw new Error(body?.error?.message ?? `Request failed (${res.status})`);
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setError((err as Error).message || 'Could not submit your request. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -106,7 +134,7 @@ export default function DeleteAccountPage() {
               <select
                 id="appType"
                 value={appType}
-                onChange={(e) => setAppType(e.target.value)}
+                onChange={(e) => setAppType(e.target.value as 'customer' | 'restaurant' | 'rider')}
                 className="w-full rounded-lg border-slate-300 border p-2 text-sm bg-white"
               >
                 <option value="customer">Bocardo (Customer App)</option>
@@ -140,11 +168,18 @@ export default function DeleteAccountPage() {
               />
             </div>
 
+            {error ? (
+              <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2" role="alert">
+                {error}
+              </p>
+            ) : null}
+
             <button
               type="submit"
-              className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm"
+              disabled={submitting}
+              className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm"
             >
-              Submit Deletion Request
+              {submitting ? 'Submitting...' : 'Submit Deletion Request'}
             </button>
           </form>
         )}

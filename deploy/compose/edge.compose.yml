@@ -16,6 +16,7 @@ services:
       - "443:443/udp"
     volumes:
       - ${BOCARDO_HOME:-/opt/bocardo}/caddy:/etc/caddy:ro
+      - ${BOCARDO_HOME:-/opt/bocardo}/releases:/srv/releases:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

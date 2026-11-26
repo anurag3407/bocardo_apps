@@ -49,10 +49,14 @@ export const envSchema = z
     TWILIO_ACCOUNT_SID: optionalString,
     TWILIO_AUTH_TOKEN: optionalString,
     TWILIO_CALLER_ID: optionalString,
+    TWILIO_MESSAGE_SERVICE_SID: optionalString,
+    TWILIO_FROM_NUMBER: optionalString,
     /** Shared secret appended to telephony status-callback URLs. */
     TELEPHONY_WEBHOOK_TOKEN: optionalString,
 
-    SMS_PROVIDER: z.enum(['msg91', 'log']).default('log'),
+    SMS_PROVIDER: z.enum(['msg91', 'twilio', 'log']).default('log'),
+    /** Optional webhook (e.g. ntfy.sh / Discord) for receiving test OTPs when SMS_PROVIDER=log. */
+    DEV_OTP_WEBHOOK_URL: optionalString,
     MSG91_AUTH_KEY: optionalString,
     MSG91_OTP_TEMPLATE_ID: optionalString,
     /** TRAI DLT registration (India): principal entity + approved OTP content template + 6-char header. */
@@ -71,6 +75,17 @@ export const envSchema = z
     RAZORPAY_WEBHOOK_SECRET: optionalString,
   })
   .superRefine((env, ctx) => {
+    if (env.DEV_OTP_WEBHOOK_URL) {
+      try {
+        new URL(env.DEV_OTP_WEBHOOK_URL);
+      } catch {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['DEV_OTP_WEBHOOK_URL'],
+          message: 'must be a valid URL',
+        });
+      }
+    }
     if (env.NODE_ENV !== 'production' || env.ALLOW_DEV_FALLBACKS) return;
     // In-memory/dev fallbacks are unsafe with more than one instance — require real providers.
     if (env.TELEPHONY_PROVIDER === 'direct') {
@@ -78,6 +93,40 @@ export const envSchema = z
         code: 'custom',
         path: ['TELEPHONY_PROVIDER'],
         message: 'direct dialing exposes phone numbers; use exotel or twilio',
+      });
+    }
+    if (env.SMS_PROVIDER === 'log') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMS_PROVIDER'],
+        message: 'log does not send SMS; use msg91 or twilio',
+      });
+    }
+    if (env.DEV_OTP_WEBHOOK_URL) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DEV_OTP_WEBHOOK_URL'],
+        message: 'must not be set in production',
+      });
+    }
+    if (env.SMS_PROVIDER === 'msg91' && (!env.MSG91_AUTH_KEY || !env.MSG91_OTP_TEMPLATE_ID)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MSG91_AUTH_KEY'],
+        message: 'MSG91_AUTH_KEY and MSG91_OTP_TEMPLATE_ID are required when SMS_PROVIDER=msg91',
+      });
+    }
+    if (
+      env.SMS_PROVIDER === 'twilio' &&
+      (!env.TWILIO_ACCOUNT_SID ||
+        !env.TWILIO_AUTH_TOKEN ||
+        (!env.TWILIO_MESSAGE_SERVICE_SID && !env.TWILIO_FROM_NUMBER))
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TWILIO_ACCOUNT_SID'],
+        message:
+          'TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_MESSAGE_SERVICE_SID or TWILIO_FROM_NUMBER are required when SMS_PROVIDER=twilio',
       });
     }
     if (env.OTP_HUMAN_CHECK !== 'required') {

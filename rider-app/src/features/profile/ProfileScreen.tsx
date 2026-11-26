@@ -4,13 +4,16 @@ import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/core/api/api-error';
 import { useRidersMe } from '@/core/api/generated/rider/rider';
 import { usersDeleteAccount } from '@/core/api/generated/users/users';
+import { useAppConfig } from '@/core/app-config/use-app-config';
 import { signOut } from '@/core/auth/auth-actions';
+import { env } from '@/core/config/env';
 import { stopTracking } from '@/core/location/background-tracking';
 import { formatPaise } from '@/lib/format';
 import { Badge, Card, Divider, Icon, ListItem, Logo, radius, Row, Screen, spacing, Text, useTheme, type IconName } from '@/ui';
 
 export function ProfileScreen() {
   const t = useTheme();
+  const config = useAppConfig();
   const me = useRidersMe();
   const r = me.data;
 
@@ -81,12 +84,23 @@ export function ProfileScreen() {
       </Card>
 
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
-        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => void Linking.openURL('https://bocardo.app/privacy')} />
+        <ListItem icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => void Linking.openURL(`${env.webUrl}/privacy`)} />
         <Divider inset={48} />
-        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => void Linking.openURL('https://bocardo.app/terms')} />
+        <ListItem icon="document-text-outline" title="Terms of Service" onPress={() => void Linking.openURL(`${env.webUrl}/terms`)} />
       </Card>
 
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        {config.updateAvailable && config.apkUrl ? (
+          <>
+            <ListItem
+              icon="cloud-download-outline"
+              title={`Update to v${config.latestVersion}`}
+              subtitle={config.releaseNotes ?? 'Tap to download the latest APK'}
+              onPress={() => void Linking.openURL(config.apkUrl!)}
+            />
+            <Divider inset={48} />
+          </>
+        ) : null}
         <ListItem icon="log-out-outline" title="Sign out" chevron={false} onPress={logout} />
         <Divider inset={48} />
         <ListItem icon="trash-outline" title="Delete account" destructive chevron={false} onPress={deleteAccount} />

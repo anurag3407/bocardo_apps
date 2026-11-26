@@ -47,13 +47,12 @@ export class PartnerRestaurantService {
         'Bocardo does not operate at this location yet',
       );
 
-    // Verify KYC document uploads exist in storage if storage is configured
-    if (input.fssaiDocumentPath && !(await this.storage.exists('kyc-documents', input.fssaiDocumentPath))) {
-      throw AppError.badRequest('FSSAI_DOC_NOT_FOUND', 'FSSAI certificate document not uploaded');
-    }
-    if (input.panDocumentPath && !(await this.storage.exists('kyc-documents', input.panDocumentPath))) {
-      throw AppError.badRequest('PAN_DOC_NOT_FOUND', 'PAN card document not uploaded');
-    }
+    await this.verifyKycDocuments(userId, [
+      input.fssaiDocumentPath,
+      input.panDocumentPath,
+      input.gstDocumentPath,
+      input.bankChequeDocumentPath,
+    ]);
 
     // Check if applicant already has a pending or rejected restaurant; if so, update instead of duplicating
     const existing = await this.db
@@ -150,6 +149,13 @@ export class PartnerRestaurantService {
     if (r.status === 'active') {
       throw AppError.conflict('ALREADY_ACTIVE', 'Your restaurant is already active');
     }
+
+    await this.verifyKycDocuments(userId, [
+      input.fssaiDocumentPath,
+      input.panDocumentPath,
+      input.gstDocumentPath,
+      input.bankChequeDocumentPath,
+    ]);
 
     let zoneId = r.zone_id;
     let cityId = r.city_id;
@@ -568,5 +574,21 @@ export class PartnerRestaurantService {
   private async afterMenuChange(restaurantId: string) {
     await this.cache.invalidateMenu(restaurantId);
     return this.menu(restaurantId);
+  }
+
+  private async verifyKycDocuments(userId: string, paths: Array<string | undefined>) {
+    const unique = [...new Set(paths.filter((p): p is string => Boolean(p)))];
+    const prefix = `${userId}/`;
+    for (const path of unique) {
+      if (!path.startsWith(prefix) || path.includes('..')) {
+        throw AppError.badRequest(
+          'INVALID_KYC_DOCUMENT',
+          'KYC document must be uploaded under your own account',
+        );
+      }
+      if (!(await this.storage.exists('kyc-documents', path))) {
+        throw AppError.badRequest('KYC_DOC_NOT_FOUND', 'Uploaded KYC document was not found in storage');
+      }
+    }
   }
 }

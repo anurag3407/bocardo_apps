@@ -1,0 +1,256 @@
+name: Mobile · release APKs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'customer-app/**'
+      - 'restaurant-app/**'
+      - 'rider-app/**'
+      - 'scripts/bump-mobile-version.mjs'
+      - '.github/workflows/mobile-release.yml'
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which app(s) to bump, build, and publish
+        type: choice
+        default: all
+        options:
+          - all
+          - customer
+          - restaurant
+          - rider
+      force:
+        description: Require users below this version to update before continuing
+        type: boolean
+        default: false
+      release_notes:
+        description: Optional short release notes shown in the Update prompt
+        type: string
+        default: ''
+
+concurrency:
+  group: mobile-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Detect apps & bump versions
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      has_apps: ${{ steps.bump.outputs.has_apps }}
+      matrix: ${{ steps.bump.outputs.matrix }}
+      summary: ${{ steps.bump.outputs.summary }}
+      head_sha: ${{ steps.commit.outputs.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Determine changed apps & bump versions
+        id: bump
+        run: |
+          APPS=""
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.app }}" == "all" ]]; then
+              APPS="customer-app restaurant-app rider-app"
+            else
+              APPS="${{ inputs.app }}-app"
+            fi
+          else
+            BEFORE="${{ github.event.before }}"
+            if [[ -z "$BEFORE" || "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+              CHANGED="$(git show --name-only --pretty="" "${{ github.sha }}")"
+            else
+              CHANGED="$(git diff --name-only "$BEFORE" "${{ github.sha }}")"
+            fi
+            for app in customer-app restaurant-app rider-app; do
+              if echo "$CHANGED" | grep -q "^${app}/"; then
+                APPS="$APPS $app"
+              fi
+            done
+          fi
+
+          APPS="$(echo "$APPS" | xargs)"
+          if [[ -z "$APPS" ]]; then
+            echo "has_apps=false" >>"$GITHUB_OUTPUT"
+            echo "matrix={\"include\":[]}" >>"$GITHUB_OUTPUT"
+            echo "summary=none" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # shellcheck disable=SC2086
+          node scripts/bump-mobile-version.mjs --github-output $APPS
+
+      - name: Commit & push bumped version
+        id: commit
+        if: steps.bump.outputs.has_apps == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add customer-app/package.json customer-app/app.config.ts \
+            restaurant-app/package.json restaurant-app/app.config.ts \
+            rider-app/package.json rider-app/app.config.ts
+          if git diff --cached --quiet; then
+            echo "head_sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "chore(mobile): release ${{ steps.bump.outputs.summary }} [skip ci]"
+          for attempt in 1 2 3; do
+            if git push origin "HEAD:${{ github.ref_name }}"; then
+              break
+            fi
+            if (( attempt == 3 )); then
+              exit 1
+            fi
+            git pull --rebase origin "${{ github.ref_name }}"
+          done
+          echo "head_sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+
+  build:
+    name: Build APK · ${{ matrix.key }} v${{ matrix.version }}
+    needs: prepare
+    if: needs.prepare.outputs.has_apps == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.33.0'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: ${{ matrix.dir }}/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install app dependencies
+        working-directory: ${{ matrix.dir }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure optional release keystore
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "${RUNNER_TEMP}/release.keystore"
+          {
+            echo "ANDROID_KEYSTORE_PATH=${RUNNER_TEMP}/release.keystore"
+            echo "ANDROID_KEYSTORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}"
+            echo "ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS}"
+            echo "ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
+          } >>"$GITHUB_ENV"
+
+      - name: Expo prebuild & Gradle release APK
+        working-directory: ${{ matrix.dir }}
+        env:
+          EAS_BUILD_PROFILE: production
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'https://api.bocardo.in' }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_MAPBOX_TOKEN: ${{ vars.EXPO_PUBLIC_MAPBOX_TOKEN }}
+          EXPO_PUBLIC_WEB_URL: ${{ vars.EXPO_PUBLIC_WEB_URL || 'https://bocardo.in' }}
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=768m
+        run: |
+          test -n "$EXPO_PUBLIC_SUPABASE_URL" || { echo "::error::EXPO_PUBLIC_SUPABASE_URL repo variable is required"; exit 1; }
+          test -n "$EXPO_PUBLIC_SUPABASE_ANON_KEY" || { echo "::error::EXPO_PUBLIC_SUPABASE_ANON_KEY repo variable is required"; exit 1; }
+          test -n "$EXPO_PUBLIC_MAPBOX_TOKEN" || { echo "::error::EXPO_PUBLIC_MAPBOX_TOKEN repo variable is required"; exit 1; }
+          npx expo prebuild --platform android --non-interactive
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --max-workers=2
+          mkdir -p "${RUNNER_TEMP}/apks"
+          cp app/build/outputs/apk/release/app-release.apk "${RUNNER_TEMP}/apks/bocardo-${{ matrix.key }}-${{ matrix.version }}.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.key }}
+          path: ${{ runner.temp }}/apks/bocardo-${{ matrix.key }}-${{ matrix.version }}.apk
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-${{ matrix.key }}-v${{ matrix.version }}
+          target_commitish: ${{ needs.prepare.outputs.head_sha }}
+          name: Bocardo ${{ matrix.key }} v${{ matrix.version }}
+          files: ${{ runner.temp }}/apks/bocardo-${{ matrix.key }}-${{ matrix.version }}.apk
+          body: |
+            Automated APK build for `${{ matrix.dir }}` (`versionCode` `${{ matrix.versionCode }}`).
+            Direct download will also be served at `https://${{ vars.API_DOMAIN || 'api.bocardo.in' }}/releases/bocardo-${{ matrix.key }}-${{ matrix.version }}.apk`.
+
+  publish-vps:
+    name: Publish APKs to VPS & update app_config
+    needs: [prepare, build]
+    if: ${{ !cancelled() && needs.prepare.outputs.has_apps == 'true' && needs.build.result == 'success' }}
+    runs-on: [self-hosted, linux, bocardo-prod]
+    environment:
+      name: production
+      url: https://${{ vars.API_DOMAIN || 'api.bocardo.in' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+          clean: true
+
+      - name: Download built APKs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: apk-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/apks
+
+      - name: Host APKs & register releases
+        env:
+          MATRIX_JSON: ${{ needs.prepare.outputs.matrix }}
+          FORCE_UPDATE: ${{ inputs.force || 'false' }}
+          RELEASE_NOTES: ${{ inputs.release_notes || '' }}
+          API_DOMAIN: ${{ vars.API_DOMAIN || 'api.bocardo.in' }}
+        run: |
+          chmod +x deploy/scripts/publish-apk.sh
+          while IFS=$'\t' read -r key version vc; do
+            apk_file="${RUNNER_TEMP}/apks/bocardo-${key}-${version}.apk"
+            deploy/scripts/publish-apk.sh "$key" "$version" "$vc" "$apk_file" "$FORCE_UPDATE" "$RELEASE_NOTES"
+          done < <(node -e "for (const item of JSON.parse(process.env.MATRIX_JSON).include) console.log([item.key, item.version, item.versionCode].join('\t'));")
+
+      - name: Summary
+        if: always()
+        env:
+          API_DOMAIN: ${{ vars.API_DOMAIN || 'api.bocardo.in' }}
+          MATRIX_JSON: ${{ needs.prepare.outputs.matrix }}
+        run: |
+          {
+            echo "### Mobile APK Releases"
+            echo
+            node -e "for (const i of JSON.parse(process.env.MATRIX_JSON).include) console.log('- **' + i.key + '** \`v' + i.version + '\` (' + i.versionCode + '): https://' + process.env.API_DOMAIN + '/releases/bocardo-' + i.key + '-' + i.version + '.apk');"
+          } >>"$GITHUB_STEP_SUMMARY"

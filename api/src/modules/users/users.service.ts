@@ -1,14 +1,33 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { AppError } from '../../common/errors/app-error';
-import { DB, type Db, type Executor } from '../../infra/database/database';
+import { DB, json, type Db, type Executor } from '../../infra/database/database';
 import type { ClientApp } from '../../infra/database/db.types';
+import { AuditService } from '../../platform/audit/audit.service';
 import { ACTIVE_ORDER_STATUSES } from '../orders/domain/order-state-machine';
-import type { ProfileDto, UpdateProfileDto } from './users.dto';
+import { normalizeOtpPhone } from '../otp/otp-rules';
+import type {
+  DeletionRequestDto,
+  ProfileDto,
+  PublishReleaseDto,
+  UpdateProfileDto,
+} from './users.dto';
+
+export interface AppReleaseEntry {
+  latestVersion: string;
+  versionCode?: number;
+  minVersion?: string;
+  apkUrl: string;
+  releaseNotes?: string | null;
+  updatedAt?: string;
+}
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    private readonly audit: AuditService,
+  ) {}
 
   async getProfile(userId: string): Promise<ProfileDto> {
     const p = await this.db
@@ -122,10 +141,11 @@ export class UsersService {
     const rows = await this.db
       .selectFrom('app_config')
       .select(['key', 'value'])
-      .where('key', 'in', ['min_app_version', 'support', 'campaign_icon'])
+      .where('key', 'in', ['min_app_version', 'app_releases', 'support', 'campaign_icon'])
       .execute();
     const byKey = Object.fromEntries(rows.map((r) => [r.key, r.value])) as {
       min_app_version?: Record<string, string>;
+      app_releases?: Record<string, AppReleaseEntry>;
       support?: { phone?: string; email?: string };
       campaign_icon?: Record<string, string> | string;
     };
@@ -133,12 +153,119 @@ export class UsersService {
       typeof byKey.campaign_icon === 'string'
         ? byKey.campaign_icon
         : byKey.campaign_icon?.[app] ?? null;
+    const release = byKey.app_releases?.[app];
 
     return {
-      minVersion: byKey.min_app_version?.[app] ?? '0.0.0',
+      minVersion: release?.minVersion ?? byKey.min_app_version?.[app] ?? '0.0.0',
+      latestVersion: release?.latestVersion ?? null,
+      apkUrl: release?.apkUrl ?? null,
+      releaseNotes: release?.releaseNotes ?? null,
       supportPhone: byKey.support?.phone ?? null,
       supportEmail: byKey.support?.email ?? null,
       campaignIcon: campaign ?? null,
     };
+  }
+
+  /** Atomically records a new mobile APK release in `app_config` (`app_releases`). */
+  async publishRelease(input: PublishReleaseDto) {
+    return this.db.transaction().execute(async (tx) => {
+      const existingRows = await tx
+        .selectFrom('app_config')
+        .select(['key', 'value'])
+        .where('key', 'in', ['app_releases', 'min_app_version'])
+        .forUpdate()
+        .execute();
+      const map = Object.fromEntries(existingRows.map((r) => [r.key, r.value])) as {
+        app_releases?: Record<string, AppReleaseEntry>;
+        min_app_version?: Record<string, string>;
+      };
+
+      const prevRelease = map.app_releases?.[input.app];
+      const nextMin = input.force
+        ? input.version
+        : (input.minVersion ?? prevRelease?.minVersion ?? '0.0.1');
+
+      const entry: AppReleaseEntry = {
+        latestVersion: input.version,
+        versionCode: input.versionCode,
+        minVersion: nextMin,
+        apkUrl: input.apkUrl,
+        releaseNotes: input.releaseNotes ?? null,
+        updatedAt: new Date().toISOString(),
+      };
+      const nextReleases = { ...(map.app_releases ?? {}), [input.app]: entry };
+
+      await tx
+        .insertInto('app_config')
+        .values({ key: 'app_releases', value: json(nextReleases) })
+        .onConflict((oc) =>
+          oc.column('key').doUpdateSet({ value: json(nextReleases), updated_at: new Date() }),
+        )
+        .execute();
+
+      if (input.force) {
+        const nextMinVersions = { ...(map.min_app_version ?? {}), [input.app]: input.version };
+        await tx
+          .insertInto('app_config')
+          .values({ key: 'min_app_version', value: json(nextMinVersions) })
+          .onConflict((oc) =>
+            oc.column('key').doUpdateSet({ value: json(nextMinVersions), updated_at: new Date() }),
+          )
+          .execute();
+      }
+
+      await this.audit.record(tx, {
+        actorId: null,
+        action: 'app.release',
+        entityType: 'app_config',
+        entityId: input.app,
+        before: prevRelease ?? null,
+        after: entry,
+      });
+
+      return entry;
+    });
+  }
+
+  /** Logs a web deletion request and opens an ops/support ticket if the phone matches an account. */
+  async requestDeletion(input: DeletionRequestDto) {
+    const parsed = normalizeOtpPhone(input.phone, ['91']);
+    if (!parsed.ok) {
+      throw AppError.badRequest(parsed.reason, 'Enter a valid 10-digit Indian mobile number');
+    }
+    const profile = await this.db
+      .selectFrom('profiles')
+      .select(['id', 'deleted_at'])
+      .where('phone', '=', parsed.phone)
+      .executeTakeFirst();
+
+    await this.db.transaction().execute(async (tx) => {
+      if (profile && !profile.deleted_at) {
+        await tx
+          .insertInto('support_tickets')
+          .values({
+            user_id: profile.id,
+            app: input.app,
+            category: 'account',
+            subject: 'Web account deletion request',
+            description:
+              input.reason?.trim() ||
+              `Account deletion requested via web form for +${parsed.phone} (${input.app}).`,
+          })
+          .execute();
+      }
+      await this.audit.record(tx, {
+        actorId: profile?.id ?? null,
+        action: 'account.deletion_requested',
+        entityType: 'user',
+        entityId: profile?.id,
+        after: {
+          app: input.app,
+          phoneMasked: `${parsed.phone.slice(0, 4)}…${parsed.phone.slice(-2)}`,
+          matchedAccount: Boolean(profile && !profile.deleted_at),
+          reason: input.reason ?? null,
+        },
+      });
+    });
   }
 }

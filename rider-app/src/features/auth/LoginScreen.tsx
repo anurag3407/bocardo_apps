@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizePhone, sendOtp } from '@/core/auth/auth-actions';
+import { env } from '@/core/config/env';
 import { Button, Input, Logo, radius, Row, spacing, Text, useTheme } from '@/ui';
 
 /** Sky hero with the brand mark, white sheet with the phone field (Zomato-style entry). */
@@ -93,7 +94,7 @@ export function LoginScreen({ headline = 'Food you love,\ndelivered fast', tag }
                 variant="caption"
                 color={t.brand}
                 style={{ textDecorationLine: 'underline' }}
-                onPress={() => void Linking.openURL('https://bocardo.app/terms')}
+                onPress={() => void Linking.openURL(`${env.webUrl}/terms`)}
               >
                 Terms of Service
               </Text>
@@ -102,7 +103,7 @@ export function LoginScreen({ headline = 'Food you love,\ndelivered fast', tag }
                 variant="caption"
                 color={t.brand}
                 style={{ textDecorationLine: 'underline' }}
-                onPress={() => void Linking.openURL('https://bocardo.app/privacy')}
+                onPress={() => void Linking.openURL(`${env.webUrl}/privacy`)}
               >
                 Privacy Policy
               </Text>
