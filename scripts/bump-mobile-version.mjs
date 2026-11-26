@@ -15,6 +15,7 @@ const APPS = {
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
+const readOnly = args.includes('--read-only');
 const writeGhOutput = args.includes('--github-output');
 const rawTargets = args.filter((a) => !a.startsWith('--'));
 const resolvedTargets = rawTargets.flatMap((t) => {
@@ -50,30 +51,30 @@ const results = targets.map((dir) => {
 
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
   const prevVersion = pkg.version;
-  const nextVersion = nextPatch(prevVersion);
+  const nextVersion = readOnly ? prevVersion : nextPatch(prevVersion);
 
   const appConfig = readFileSync(appConfigPath, 'utf8');
   const vcMatch = /versionCode:\s*(\d+)/.exec(appConfig);
   if (!vcMatch) throw new Error(`Missing android versionCode in ${appConfigPath}`);
   const prevCode = Number(vcMatch[1]);
-  const nextCode = prevCode + 1;
+  const nextCode = readOnly ? prevCode : prevCode + 1;
 
-  pkg.version = nextVersion;
-  const nextPkgRaw = `${JSON.stringify(pkg, null, 2)}\n`;
-  let nextAppConfig = replaceOnce(
-    appConfig,
-    /(version:\s*')[^']+(')/,
-    (_, p1, p2) => `${p1}${nextVersion}${p2}`,
-    `${dir}/app.config.ts version`,
-  );
-  nextAppConfig = replaceOnce(
-    nextAppConfig,
-    /(versionCode:\s*)\d+/,
-    (_, p1) => `${p1}${nextCode}`,
-    `${dir}/app.config.ts versionCode`,
-  );
+  if (!readOnly && !dryRun) {
+    pkg.version = nextVersion;
+    const nextPkgRaw = `${JSON.stringify(pkg, null, 2)}\n`;
+    let nextAppConfig = replaceOnce(
+      appConfig,
+      /(version:\s*')[^']+(')/,
+      (_, p1, p2) => `${p1}${nextVersion}${p2}`,
+      `${dir}/app.config.ts version`,
+    );
+    nextAppConfig = replaceOnce(
+      nextAppConfig,
+      /(versionCode:\s*)\d+/,
+      (_, p1) => `${p1}${nextCode}`,
+      `${dir}/app.config.ts versionCode`,
+    );
 
-  if (!dryRun) {
     writeFileSync(pkgPath, nextPkgRaw, 'utf8');
     writeFileSync(appConfigPath, nextAppConfig, 'utf8');
     if (existsSync(gradlePath)) {

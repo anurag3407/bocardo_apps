@@ -28,6 +28,10 @@ on:
         description: Optional short release notes shown in the Update prompt
         type: string
         default: ''
+      skip_bump:
+        description: Build current versions without bumping package.json / app.config.ts
+        type: boolean
+        default: false
 
 concurrency:
   group: mobile-release
@@ -87,7 +91,11 @@ jobs:
           fi
 
           # shellcheck disable=SC2086
-          node scripts/bump-mobile-version.mjs --github-output $APPS
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.skip_bump }}" == "true" ]]; then
+            node scripts/bump-mobile-version.mjs --read-only --github-output $APPS
+          else
+            node scripts/bump-mobile-version.mjs --github-output $APPS
+          fi
 
       - name: Commit & push bumped version
         id: commit
@@ -145,7 +153,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: |
+          SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMGR="$(find "${SDK_DIR}/cmdline-tools" -maxdepth 3 -name sdkmanager 2>/dev/null | head -n1 || true)"
+          if [[ -n "$SDKMGR" ]]; then
+            yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
+          fi
 
       - uses: gradle/actions/setup-gradle@v4
 
