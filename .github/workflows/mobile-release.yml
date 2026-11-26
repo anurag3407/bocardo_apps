@@ -36,7 +36,7 @@ concurrency:
 jobs:
   prepare:
     name: Detect apps & bump versions
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -154,20 +154,23 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Configure optional release keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "${RUNNER_TEMP}/release.keystore"
-          {
-            echo "ANDROID_KEYSTORE_PATH=${RUNNER_TEMP}/release.keystore"
-            echo "ANDROID_KEYSTORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}"
-            echo "ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS}"
-            echo "ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
-          } >>"$GITHUB_ENV"
+          if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" ]]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "${RUNNER_TEMP}/release.keystore"
+            {
+              echo "ANDROID_KEYSTORE_PATH=${RUNNER_TEMP}/release.keystore"
+              echo "ANDROID_KEYSTORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}"
+              echo "ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS}"
+              echo "ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
+            } >>"$GITHUB_ENV"
+          else
+            echo "Using debug.keystore for test APK signing"
+          fi
 
       - name: Expo prebuild & Gradle release APK
         working-directory: ${{ matrix.dir }}
@@ -233,7 +236,7 @@ jobs:
       - name: Host APKs & register releases
         env:
           MATRIX_JSON: ${{ needs.prepare.outputs.matrix }}
-          FORCE_UPDATE: ${{ inputs.force || 'false' }}
+          FORCE_UPDATE: ${{ inputs.force == true && 'true' || 'false' }}
           RELEASE_NOTES: ${{ inputs.release_notes || '' }}
           API_DOMAIN: ${{ vars.API_DOMAIN || 'api.bocardo.in' }}
         run: |
