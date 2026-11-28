@@ -149,6 +149,8 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       {
         ios: { useFrameworks: 'static' },
         android: {
+          kotlinVersion: '2.4.0',
+          minSdkVersion: 24,
           extraProguardRules: [
             '-keep class com.mapbox.** { *; }',
             '-dontwarn com.mapbox.**',
