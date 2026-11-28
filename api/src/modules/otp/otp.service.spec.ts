@@ -130,4 +130,25 @@ describe('OtpService.exchangeFirebasePhone', () => {
       'https://example.supabase.co/auth/v1/admin/users/supa-existing',
     );
   });
+
+  it('omits Authorization Bearer header when using new sb_secret_ key', async () => {
+    (getAuth as jest.Mock).mockReturnValue({
+      verifyIdToken: jest.fn().mockResolvedValue({ uid: 'u1', phone_number: '+919876543210' }),
+    });
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'supa-uuid-1' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'acc-3', refresh_token: 'ref-3' }),
+      });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { svc } = makeService({ serviceRoleKey: 'sb_secret_test_123' });
+    const res = await svc.exchangeFirebasePhone({ idToken: 'ok-token-12345', ip: '1.2.3.4' });
+    expect(res).toEqual({ accessToken: 'acc-3', refreshToken: 'ref-3' });
+    const adminCallHeaders = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+    expect(adminCallHeaders.apikey).toBe('sb_secret_test_123');
+    expect(adminCallHeaders.Authorization).toBeUndefined();
+  });
 });

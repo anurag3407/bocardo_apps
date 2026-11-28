@@ -176,9 +176,10 @@ export class OtpService {
     const digits = parsed.phone;
     const e164 = `+${digits}`;
     const password = randomBytes(32).toString('base64url');
-    const adminHeaders = {
+    const isSecretKey = this.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('sb_secret_');
+    const adminHeaders: Record<string, string> = {
       apikey: this.env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      ...(isSecretKey ? {} : { Authorization: `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}` }),
       'Content-Type': 'application/json',
     };
 
