@@ -2,7 +2,7 @@
 # Writes the host config from GitHub secrets/variables, so nobody has to SSH in to edit files.
 #
 #   API_ENV_FILE    (secret)   full contents of the API's .env; skipped when empty, keeping the file on disk
-#   SUPABASE_SEND_SMS_HOOK_SECRET, DEV_OTP_WEBHOOK_URL, FIREBASE_SERVICE_ACCOUNT_BASE64 (secrets, optional) upserted into api.env
+#   SUPABASE_SEND_SMS_HOOK_SECRET, DEV_OTP_WEBHOOK_URL, FIREBASE_SERVICE_ACCOUNT_BASE64, SUPABASE_SERVICE_ROLE_KEY (secrets, optional) upserted into api.env
 #   API_DOMAIN      (variable) e.g. api.bocardo.in — must resolve to this VPS
 #   ACME_EMAIL      (variable) Let's Encrypt account email
 #   API_REPLICAS, API_MEMORY_LIMIT, API_CPUS, API_HEAP_MB, DRAIN_SECONDS   (variables, optional)
@@ -38,6 +38,7 @@ apply_secret() {
 apply_secret SUPABASE_SEND_SMS_HOOK_SECRET "${SUPABASE_SEND_SMS_HOOK_SECRET:-}"
 apply_secret DEV_OTP_WEBHOOK_URL "${DEV_OTP_WEBHOOK_URL:-}"
 apply_secret FIREBASE_SERVICE_ACCOUNT_BASE64 "${FIREBASE_SERVICE_ACCOUNT_BASE64:-}"
+apply_secret SUPABASE_SERVICE_ROLE_KEY "${SUPABASE_SERVICE_ROLE_KEY:-}"
 
 public_url="$(sed -n 's/^API_PUBLIC_URL=//p' "$SHARED_DIR/api.env" | tail -1 | tr -d "\"'")"
 if [[ "$public_url" != "https://$API_DOMAIN" ]]; then
