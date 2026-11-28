@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     ...config,
   name: 'Bocardo Rider',
   slug: 'bocardo-rider',
-  version: '0.0.3',
+  version: '0.0.4',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'bocardo-rider',
@@ -106,7 +106,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
   },
   android: {
     package: 'app.bocardo.rider',
-    versionCode: 3,
+    versionCode: 4,
     ...(existsSync(androidFirebase) ? { googleServicesFile: androidFirebase } : {}),
     // keeps the Supabase session (SQLite) out of adb / cloud backups
     allowBackup: false,

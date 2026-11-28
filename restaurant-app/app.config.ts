@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     ...config,
   name: 'Bocardo Partner',
   slug: 'bocardo-restaurant',
-  version: '0.0.3',
+  version: '0.0.4',
   // tablets at the counter are often landscape
   orientation: 'default',
   icon: './assets/images/icon.png',
@@ -106,7 +106,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
   },
   android: {
     package: 'app.bocardo.restaurant',
-    versionCode: 3,
+    versionCode: 4,
     ...(existsSync(androidFirebase) ? { googleServicesFile: androidFirebase } : {}),
     // keeps the Supabase session (SQLite) out of adb / cloud backups
     allowBackup: false,
