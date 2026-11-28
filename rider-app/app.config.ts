@@ -162,6 +162,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     // without a monochrome small icon Android renders the launcher icon as a white square
     ['expo-notifications', { color: '#0596D1', icon: './assets/images/android-icon-monochrome.png', sounds: ['./assets/sounds/order_ring.wav'] }],
     '@react-native-firebase/app',
+    '@react-native-firebase/auth',
     '@react-native-firebase/messaging',
     '@react-native-firebase/app-check',
     [

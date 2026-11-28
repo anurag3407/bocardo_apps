@@ -1,5 +1,6 @@
-// Registers the background location task before anything else (required by TaskManager).
+// Registers background tasks (location + FCM push) before anything else.
 import '@/core/location/background-tracking';
+import '@/core/notifications/push';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -31,7 +32,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={navigationTheme(scheme === 'dark' ? DarkTheme : DefaultTheme, t)}>
         <ForceUpdateGate>
-          {signedIn && isRider ? <SignedInEffects /> : null}
+          {signedIn ? <SignedInEffects /> : null}
           <Stack
             screenOptions={{
               headerBackButtonDisplayMode: 'minimal',

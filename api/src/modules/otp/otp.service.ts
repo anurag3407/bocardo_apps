@@ -1,7 +1,12 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import type { App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { sql } from 'kysely';
+import { randomBytes } from 'node:crypto';
 import { AppError } from '../../common/errors/app-error';
 import { ENV, type Env } from '../../config/env';
 import { DB, type Db } from '../../infra/database/database';
+import { FIREBASE_APP } from '../../infra/firebase/firebase-app';
 import { KV_STORE, type KvStore } from '../../infra/kv/kv-store';
 import { RealtimePublisher } from '../../infra/realtime/realtime-publisher';
 import { HumanVerifier } from '../../infra/security/human-verifier';
@@ -37,6 +42,7 @@ export class OtpService {
     @Inject(KV_STORE) private readonly kv: KvStore,
     @Inject(SMS_SENDER) private readonly sms: SmsSender,
     @Inject(ENV) private readonly env: Env,
+    @Inject(FIREBASE_APP) private readonly firebase: App | null,
     private readonly human: HumanVerifier,
     private readonly config: AppConfigService,
     private readonly realtime: RealtimePublisher,
@@ -117,6 +123,128 @@ export class OtpService {
 
     await this.kv.set(ticketKey(parsed.phone), { via: human.via }, { ttlSeconds: TICKET_TTL_S });
     return { phone: `+${parsed.phone}`, expiresInSeconds: TICKET_TTL_S };
+  }
+
+  /**
+   * Verifies a Firebase Phone Auth ID token and exchanges it for a genuine Supabase Auth session
+   * so Postgres `auth.users`, `profiles`, RLS, Realtime, and Storage keep working seamlessly.
+   */
+  async exchangeFirebasePhone(input: { idToken: string; ip: string }) {
+    if (!this.firebase) {
+      throw new AppError(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'FIREBASE_UNAVAILABLE',
+        'Phone authentication is not configured',
+      );
+    }
+    if (!this.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new AppError(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'SUPABASE_ADMIN_UNAVAILABLE',
+        'Session issuer is not configured',
+      );
+    }
+
+    let decoded: { phone_number?: string };
+    try {
+      decoded = await getAuth(this.firebase).verifyIdToken(input.idToken, true);
+    } catch (err) {
+      this.logger.warn(`firebase phone token rejected (${(err as Error).message}) from ${input.ip}`);
+      throw AppError.unauthorized('Invalid or expired verification code');
+    }
+    if (!decoded.phone_number) {
+      throw AppError.badRequest(
+        'MISSING_PHONE',
+        'Verification token does not include a phone number',
+      );
+    }
+
+    const cfg = await this.config.get<OtpConfig>('otp', {
+      allowedCountryCodes: ['91'],
+      hourlyBudget: 5000,
+    });
+    const parsed = normalizeOtpPhone(decoded.phone_number, cfg.allowedCountryCodes);
+    if (!parsed.ok) {
+      throw AppError.badRequest(
+        parsed.reason,
+        parsed.reason === 'COUNTRY_NOT_SUPPORTED'
+          ? 'Bocardo is available for Indian mobile numbers only'
+          : 'Enter a valid mobile number',
+      );
+    }
+
+    const digits = parsed.phone;
+    const e164 = `+${digits}`;
+    const password = randomBytes(32).toString('base64url');
+    const adminHeaders = {
+      apikey: this.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+
+    const existing = await sql<{ id: string }>`
+      select id from auth.users where phone in (${digits}, ${e164}) limit 1
+    `.execute(this.db);
+    let userId = existing.rows[0]?.id;
+
+    if (!userId) {
+      const createRes = await fetch(`${this.env.SUPABASE_URL}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: adminHeaders,
+        body: JSON.stringify({ phone: e164, phone_confirm: true, password }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!createRes.ok) {
+        // Concurrent first-time login for the same phone: re-check auth.users once before failing.
+        const retry = await sql<{ id: string }>`
+          select id from auth.users where phone in (${digits}, ${e164}) limit 1
+        `.execute(this.db);
+        userId = retry.rows[0]?.id;
+        if (!userId) {
+          const msg = await createRes.text().catch(() => String(createRes.status));
+          throw new Error(`supabase admin createUser failed: ${msg}`);
+        }
+      }
+    }
+
+    if (userId) {
+      const updateRes = await fetch(`${this.env.SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: adminHeaders,
+        body: JSON.stringify({ phone_confirm: true, password }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!updateRes.ok) {
+        const msg = await updateRes.text().catch(() => String(updateRes.status));
+        throw new Error(`supabase admin updateUser failed: ${msg}`);
+      }
+    }
+
+    const tokenRes = await fetch(`${this.env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        apikey: this.env.SUPABASE_SERVICE_ROLE_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone: e164, password }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const tokenBody = (await tokenRes.json().catch(() => null)) as {
+      access_token?: string;
+      refresh_token?: string;
+      error_description?: string;
+      msg?: string;
+    } | null;
+    if (!tokenRes.ok || !tokenBody?.access_token || !tokenBody.refresh_token) {
+      throw new Error(
+        `supabase session grant failed: ${tokenBody?.error_description ?? tokenBody?.msg ?? tokenRes.status}`,
+      );
+    }
+
+    return {
+      accessToken: tokenBody.access_token,
+      refreshToken: tokenBody.refresh_token,
+    };
   }
 
   /** Supabase Send-SMS hook: deliver only if a ticket was issued for this number (single use). */

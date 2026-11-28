@@ -100,6 +100,7 @@ jobs:
           API_ENV_FILE: ${{ secrets.API_ENV_FILE }}
           SUPABASE_SEND_SMS_HOOK_SECRET: ${{ secrets.SUPABASE_SEND_SMS_HOOK_SECRET }}
           DEV_OTP_WEBHOOK_URL: ${{ secrets.DEV_OTP_WEBHOOK_URL }}
+          FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}
           API_DOMAIN: ${{ vars.API_DOMAIN }}
           ACME_EMAIL: ${{ vars.ACME_EMAIL }}
           API_REPLICAS: ${{ vars.API_REPLICAS }}

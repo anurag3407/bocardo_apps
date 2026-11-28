@@ -21,6 +21,20 @@ class OtpTicketResultDto extends createZodDto(
   z.object({ phone: z.string(), expiresInSeconds: z.number().int() }),
 ) {}
 
+class FirebasePhoneAuthDto extends createZodDto(
+  z.object({
+    /** Firebase Auth ID token returned after confirming the phone OTP on the client. */
+    idToken: z.string().min(10).max(8192),
+  }),
+) {}
+
+class AuthSessionDto extends createZodDto(
+  z.object({
+    accessToken: z.string(),
+    refreshToken: z.string(),
+  }),
+) {}
+
 @ApiTags('auth')
 @Controller()
 export class OtpController {
@@ -49,6 +63,16 @@ export class OtpController {
       appCheckToken,
       ip: request.ip,
     });
+  }
+
+  /** Exchanges a verified Firebase Phone Auth ID token for a Supabase Auth session. */
+  @Public()
+  @Post('auth/firebase-phone')
+  @HttpCode(200)
+  @RateLimit(20, 3600)
+  @ZodResponse({ type: AuthSessionDto, status: 200 })
+  firebasePhone(@Body() body: FirebasePhoneAuthDto, @Req() request: AppRequest) {
+    return this.otp.exchangeFirebasePhone({ idToken: body.idToken, ip: request.ip });
   }
 
   /** Supabase Auth "Send SMS" hook (Standard Webhooks signed). */

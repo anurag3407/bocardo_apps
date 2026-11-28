@@ -78,6 +78,37 @@
         ]
       }
     },
+    "/auth/firebase-phone": {
+      "post": {
+        "operationId": "Otp_firebasePhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FirebasePhoneAuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/me": {
       "get": {
         "operationId": "Users_me",
@@ -4795,6 +4826,35 @@
         "required": [
           "phone",
           "expiresInSeconds"
+        ],
+        "additionalProperties": false
+      },
+      "FirebasePhoneAuthDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 8192
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "AuthSessionDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken"
         ],
         "additionalProperties": false
       },

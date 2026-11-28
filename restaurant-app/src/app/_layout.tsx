@@ -1,3 +1,4 @@
+import '@/core/notifications/push';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -29,7 +30,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={navigationTheme(scheme === 'dark' ? DarkTheme : DefaultTheme, t)}>
         <ForceUpdateGate>
-          {signedIn && isPartner ? <SignedInEffects /> : null}
+          {signedIn ? <SignedInEffects /> : null}
           <Stack
             screenOptions={{
               headerBackButtonDisplayMode: 'minimal',

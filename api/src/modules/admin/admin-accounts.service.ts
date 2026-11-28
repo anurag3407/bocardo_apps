@@ -96,6 +96,7 @@ export class AdminAccountsService {
             input.status === 'active'
               ? 'Switch on "Accepting orders" to start receiving orders.'
               : (input.reason ?? 'Please check your application details in the partner app.'),
+          data: { type: 'account_status', status: input.status },
         },
       });
     });
@@ -228,6 +229,7 @@ export class AdminAccountsService {
             input.status === 'approved'
               ? 'Go online to start receiving delivery requests.'
               : (input.reason ?? 'Contact rider support for details.'),
+          data: { type: 'account_status', status: input.status },
         },
       });
       return updated;
