@@ -1,0 +1,13 @@
+diff --git a/android/src/main/java/expo/modules/dynamicappicon/ExpoDynamicAppIconModule.kt b/android/src/main/java/expo/modules/dynamicappicon/ExpoDynamicAppIconModule.kt
+index 4a7891b5563cc4eb3cb9e3ce60dfd85a5581ab0c..0104207e395cf72f954c7f06ab2da431307a744c 100644
+--- a/android/src/main/java/expo/modules/dynamicappicon/ExpoDynamicAppIconModule.kt
++++ b/android/src/main/java/expo/modules/dynamicappicon/ExpoDynamicAppIconModule.kt
+@@ -9,7 +9,7 @@ class ExpoDynamicAppIconModule : Module() {
+     override fun definition() = ModuleDefinition {
+         Name("ExpoDynamicAppIcon")
+ 
+-        Function("setAppIcon") { name: String? ->
++        Function<Any, String?>("setAppIcon") { name: String? ->
+             try {
+                 SharedObject.packageName = context.packageName
+                 SharedObject.pm = pm

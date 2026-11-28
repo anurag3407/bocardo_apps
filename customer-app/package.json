@@ -64,6 +64,9 @@
       "esbuild",
       "protobufjs",
       "unrs-resolver"
-    ]
+    ],
+    "patchedDependencies": {
+      "@mozzius/expo-dynamic-app-icon@1.8.1": "patches/@mozzius__expo-dynamic-app-icon@1.8.1.patch"
+    }
   }
 }
